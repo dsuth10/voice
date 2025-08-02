@@ -1,0 +1,23 @@
+{
+  "context_mappings": {
+    "test_app": {
+      "context_type": "document",
+      "priority": 1,
+      "created": "2025-08-02T17:38:21.529576"
+    }
+  },
+  "formatting_templates": {
+    "test_context": {
+      "template": {
+        "formal": true
+      },
+      "created": "2025-08-02T17:38:21.529576",
+      "updated": "2025-08-02T17:38:21.529576"
+    }
+  },
+  "learning_data": {
+    "corrections": [],
+    "frequency": {},
+    "accuracy": {}
+  }
+}
