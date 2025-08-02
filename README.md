@@ -62,6 +62,14 @@ An AI-powered voice dictation application for Windows that provides real-time sp
 - **Error Classification**: Categorized error handling with user-friendly messages
 - **Resource Management**: Proper cleanup and memory management
 
+### ✅ **Core Application Architecture** (New in Task 9)
+- **Application Controller**: Central orchestrator managing all system components
+- **Workflow Management**: State-driven workflow orchestration with concurrent processing
+- **User Feedback System**: Visual and audio feedback for all user interactions
+- **Error Handling & Recovery**: Robust error detection, classification, and automatic recovery strategies
+- **Performance Monitoring**: Comprehensive metrics tracking including workflow latency, system resources, and usage statistics
+- **Thread-Safe Operations**: Concurrent processing with proper synchronization and resource management
+
 ## 🏗️ Project Structure
 
 ```
@@ -95,6 +103,12 @@ Voice/
 │   │   ├── secure_storage.py      # DPAPI encryption for sensitive data
 │   │   ├── profile_manager.py     # Multi-profile support
 │   │   └── setup_wizard.py        # Interactive setup wizard
+│   ├── core/             # Core application architecture
+│   │   ├── application_controller.py  # Main application controller
+│   │   ├── workflow_manager.py        # Workflow orchestration and state management
+│   │   ├── feedback_system.py         # User feedback and notifications
+│   │   ├── error_handler.py           # Error detection, classification, and recovery
+│   │   └── performance_monitor.py     # Performance tracking and usage analytics
 │   └── utils/            # Utility functions
 │       └── logger.py     # Logging system
 ├── tests/                # Comprehensive test suite
@@ -141,6 +155,17 @@ python -m src.config.setup_wizard
 2. **Enter API Keys**: Securely store your AssemblyAI and OpenAI API keys
 3. **Configure Hotkeys**: Set your preferred keyboard shortcuts
 4. **Test Microphone**: Verify audio capture is working correctly
+
+### Application Architecture (Task 9 Implementation)
+The core application now features a robust, modular architecture:
+
+- **ApplicationController**: Central orchestrator that manages all system components
+- **WorkflowManager**: Handles the complete dictation workflow with state management
+- **UserFeedbackSystem**: Provides visual and audio feedback for all user interactions
+- **ErrorHandler**: Implements comprehensive error detection, classification, and recovery
+- **PerformanceMonitor**: Tracks workflow performance, system resources, and usage statistics
+
+The system uses concurrent processing with proper thread synchronization to ensure responsive performance while maintaining data integrity.
 
 ### Basic Operation
 1. **Activate Dictation**: Press `Ctrl+Win+Space` (default) or your custom hotkey
@@ -200,7 +225,7 @@ python test_config_system.py
 
 ## 📊 Development Status
 
-### ✅ Completed Features (Tasks 1-7)
+### ✅ Completed Features (Tasks 1-9)
 - **Task 1**: Project structure and environment setup
 - **Task 2**: Audio capture module with noise filtering
 - **Task 3**: Speech recognition with multi-service support
@@ -208,10 +233,10 @@ python test_config_system.py
 - **Task 5**: Text insertion system with universal application support
 - **Task 6**: Global hotkey management with security compliance
 - **Task 7**: Configuration management with secure storage
+- **Task 8**: Application context awareness
+- **Task 9**: Core application controller with comprehensive workflow management
 
 ### 🔄 In Progress
-- **Task 8**: Application context awareness (pending)
-- **Task 9**: Core application controller (pending)
 - **Task 10**: System tray application (pending)
 - **Task 11**: Error handling and logging system (pending)
 - **Task 12**: Performance monitoring and analytics (pending)
@@ -244,6 +269,10 @@ This project is currently in active development. Please refer to the development
 - **pyyaml==6.0.1**: Configuration file handling
 - **pydantic==2.5.0**: Configuration validation
 - **pytest==7.4.0**: Testing framework
+- **psutil==5.9.0**: System resource monitoring (new in Task 9)
+- **concurrent.futures**: Thread pool execution (built-in)
+- **threading**: Thread synchronization (built-in)
+- **dataclasses**: Structured data containers (built-in)
 
 ### Optional Dependencies
 - **scipy**: Advanced signal processing for noise filtering
