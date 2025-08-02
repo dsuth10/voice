@@ -1,0 +1,444 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Setup Project Structure and Environment",
+        "description": "Initialize the project repository with proper structure and set up the development environment with required dependencies.",
+        "details": "Create a Python project with the following structure:\n- src/\n  - audio/\n  - recognition/\n  - ai_processing/\n  - text_insertion/\n  - hotkeys/\n  - config/\n  - utils/\n- tests/\n- docs/\n- resources/\n\nSetup virtual environment using Python 3.10 (latest stable as of 2025).\n\nCreate requirements.txt with the following dependencies:\n- pyaudio==0.2.13 (for audio capture)\n- assemblyai==0.17.0 (for speech recognition)\n- openai==1.5.0 (for AI text enhancement)\n- pywin32==306 (for Windows integration)\n- pyautogui==0.9.54 (for text insertion)\n- pygetwindow==0.0.9 (for window detection)\n- pyperclip==1.8.2 (for clipboard operations)\n- global-hotkeys==1.0.0 (for hotkey management)\n- pyyaml==6.0.1 (for configuration)\n- pytest==7.4.0 (for testing)\n\nImplement a basic logging system using Python's built-in logging module with rotating file handlers.",
+        "testStrategy": "Verify that the environment can be set up on a clean Windows 10/11 system. Run a simple test script that imports all required dependencies to ensure they're properly installed. Check that the project structure is created correctly and logging system works by writing and reading test log entries.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Version Control and Project Repository",
+            "description": "Set up a new Git repository for the project, initialize it locally, and configure remote hosting (e.g., GitHub or GitLab) for version control and collaboration.",
+            "dependencies": [],
+            "details": "Create a new directory for the project, run 'git init', and add a .gitignore file suitable for Python projects. Set up the remote repository and push the initial commit containing the base project structure files.",
+            "status": "in-progress",
+            "testStrategy": "Verify that the repository is accessible remotely, .gitignore excludes appropriate files, and version history is tracked for all changes."
+          },
+          {
+            "id": 2,
+            "title": "Create Project Directory Structure",
+            "description": "Establish the prescribed directory and subdirectory layout for the project, including all required folders for source code, tests, documentation, and resources.",
+            "dependencies": [
+              "1.1"
+            ],
+            "details": "Within the repository, create the following structure: src/audio/, src/recognition/, src/ai_processing/, src/text_insertion/, src/hotkeys/, src/config/, src/utils/, tests/, docs/, resources/. Ensure each directory contains a placeholder file (e.g., __init__.py or README.md) to allow tracking in version control.",
+            "status": "pending",
+            "testStrategy": "Check that all directories exist as specified and are tracked by Git. Confirm that placeholder files are present where needed."
+          },
+          {
+            "id": 3,
+            "title": "Set Up Python 3.10 Virtual Environment",
+            "description": "Create and activate a Python 3.10 virtual environment to isolate project dependencies and ensure compatibility with the required libraries.",
+            "dependencies": [
+              "1.2"
+            ],
+            "details": "Use 'python3.10 -m venv venv' (or equivalent) to create a virtual environment in the project root. Activate the environment and configure the project to use it for all development and testing tasks.",
+            "status": "pending",
+            "testStrategy": "Verify that the virtual environment activates correctly and that the Python interpreter version is 3.10.x."
+          },
+          {
+            "id": 4,
+            "title": "Generate requirements.txt and Install Dependencies",
+            "description": "Create a requirements.txt file listing all specified dependencies with exact versions, and install them into the virtual environment.",
+            "dependencies": [
+              "1.3"
+            ],
+            "details": "Write the provided dependency list to requirements.txt. Use pip to install all dependencies within the activated virtual environment. Address any installation errors or compatibility issues.",
+            "status": "pending",
+            "testStrategy": "Run a test script that imports each dependency to confirm successful installation. Check that requirements.txt accurately reflects all installed packages."
+          },
+          {
+            "id": 5,
+            "title": "Implement and Test Logging System",
+            "description": "Develop a basic logging system using Python's logging module with rotating file handlers, and verify its functionality within the project structure.",
+            "dependencies": [
+              "1.4"
+            ],
+            "details": "Create a logging configuration in src/utils/ that sets up rotating file handlers and appropriate log formatting. Write a test script to generate log entries and confirm log rotation and file output.",
+            "status": "pending",
+            "testStrategy": "Run the test script to ensure logs are written, rotated as expected, and can be read back. Confirm that logging works across different modules in the project."
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Implement Audio Capture Module",
+        "description": "Develop the audio capture module that handles microphone input, recording, and streaming for real-time processing.",
+        "details": "Create an AudioCapture class with the following features:\n- Use PyAudio to access the system's microphone\n- Support for 16kHz, 16-bit mono audio (optimal for speech recognition)\n- Implement both streaming and batch recording modes\n- Add noise filtering using scipy's signal processing functions\n- Include microphone selection for systems with multiple audio inputs\n- Implement audio level monitoring to detect silence/speech\n- Add a configurable audio buffer (default 3 seconds) for streaming\n\nImplementation should use Python's context managers for resource management:\n```python\nclass AudioCapture:\n    def __init__(self, sample_rate=16000, channels=1, chunk_size=1024):\n        self.sample_rate = sample_rate\n        self.channels = channels\n        self.chunk_size = chunk_size\n        self.stream = None\n        self.pyaudio = pyaudio.PyAudio()\n        \n    def __enter__(self):\n        # Setup stream\n        self.stream = self.pyaudio.open(\n            format=pyaudio.paInt16,\n            channels=self.channels,\n            rate=self.sample_rate,\n            input=True,\n            frames_per_buffer=self.chunk_size\n        )\n        return self\n        \n    def __exit__(self, exc_type, exc_val, exc_tb):\n        # Clean up resources\n        if self.stream:\n            self.stream.stop_stream()\n            self.stream.close()\n        self.pyaudio.terminate()\n```\n\nAdd methods for streaming and batch recording with proper error handling.",
+        "testStrategy": "Create unit tests that verify:\n1. Audio capture starts and stops correctly\n2. Recorded audio has the correct format and quality\n3. Streaming mode delivers chunks of expected size\n4. Error handling works when no microphone is available\n5. Noise filtering improves signal-to-noise ratio\n\nUse mock objects to simulate microphone input for consistent testing.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design AudioCapture Class Interface",
+            "description": "Define the AudioCapture class structure, including initialization parameters, context manager support, and method signatures for streaming, batch recording, noise filtering, microphone selection, and audio level monitoring.",
+            "dependencies": [],
+            "details": "Specify class attributes for sample rate, channels, chunk size, and buffer. Outline public methods for starting/stopping capture, selecting microphones, and retrieving audio data. Ensure compatibility with PyAudio and context manager protocols.",
+            "status": "pending",
+            "testStrategy": "Review class interface for completeness and clarity. Use static analysis tools to verify method signatures and context manager compliance."
+          },
+          {
+            "id": 2,
+            "title": "Implement Microphone Selection and Initialization",
+            "description": "Develop functionality to enumerate available microphones and allow selection by index or name, initializing the chosen device for audio capture.",
+            "dependencies": [
+              "2.1"
+            ],
+            "details": "Use PyAudio to list all input devices and their properties. Implement logic to select and initialize the desired microphone, handling cases where the device is unavailable or invalid.",
+            "status": "pending",
+            "testStrategy": "Unit test device enumeration and selection logic with real and mocked devices. Verify correct initialization and error handling for unavailable devices."
+          },
+          {
+            "id": 3,
+            "title": "Develop Streaming and Batch Recording Modes",
+            "description": "Implement methods for both real-time streaming and batch audio recording, supporting configurable buffer sizes and chunked data delivery.",
+            "dependencies": [
+              "2.1",
+              "2.2"
+            ],
+            "details": "Use PyAudio's stream API to capture audio in both continuous (streaming) and fixed-duration (batch) modes. Ensure audio is captured at 16kHz, 16-bit mono, and buffered according to configuration.",
+            "status": "pending",
+            "testStrategy": "Test streaming and batch recording with various buffer sizes. Verify output format, timing, and chunk sizes. Use mocks to simulate audio input for automated tests."
+          },
+          {
+            "id": 4,
+            "title": "Integrate Noise Filtering Using Scipy",
+            "description": "Add real-time noise filtering to captured audio using scipy's signal processing functions, ensuring minimal latency and improved signal quality.",
+            "dependencies": [
+              "2.3"
+            ],
+            "details": "Apply digital filters (e.g., bandpass, noise reduction) to audio frames as they are captured. Allow filter parameters to be configurable. Ensure processing is efficient for real-time use.",
+            "status": "pending",
+            "testStrategy": "Test noise filtering with synthetic and real audio samples. Measure signal-to-noise ratio improvement and processing latency. Validate filter effectiveness and stability."
+          },
+          {
+            "id": 5,
+            "title": "Add Audio Level Monitoring and Silence Detection",
+            "description": "Implement audio level monitoring to detect silence and speech, providing real-time feedback and enabling silence-based recording triggers.",
+            "dependencies": [
+              "2.3",
+              "2.4"
+            ],
+            "details": "Calculate audio amplitude or RMS in real time. Define thresholds for silence and speech. Expose events or callbacks for silence detection. Integrate with streaming and batch modes.",
+            "status": "pending",
+            "testStrategy": "Test detection accuracy with various audio levels and background noise. Simulate silence and speech to verify correct event triggering and responsiveness."
+          },
+          {
+            "id": 6,
+            "title": "Implement Error Handling and Resource Management",
+            "description": "Develop comprehensive error handling for audio capture failures, device issues, and resource cleanup, ensuring robust operation across different hardware configurations.",
+            "details": "Implement try-catch blocks for PyAudio operations, device initialization failures, and stream errors. Add proper resource cleanup in context manager __exit__ method. Handle cases where microphone becomes unavailable during recording. Include fallback mechanisms for common audio issues.",
+            "status": "pending",
+            "dependencies": [
+              "2.5"
+            ],
+            "parentTaskId": 2
+          },
+          {
+            "id": 7,
+            "title": "Write Unit and Integration Tests with Mocks",
+            "description": "Create comprehensive test suite for the AudioCapture module using mock objects to simulate microphone input and verify all functionality works correctly.",
+            "details": "Write unit tests for each method using unittest.mock to simulate PyAudio and audio devices. Create integration tests that verify the complete audio capture workflow. Test error conditions, resource management, and performance characteristics. Include tests for different audio formats and quality settings.",
+            "status": "pending",
+            "dependencies": [
+              "2.6"
+            ],
+            "parentTaskId": 2
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Develop Speech Recognition Integration",
+        "description": "Implement the speech recognition engine that integrates with AssemblyAI API for high-accuracy transcription with fallback to OpenAI Whisper.",
+        "details": "Create a SpeechRecognition class that:\n1. Integrates with AssemblyAI Python SDK (primary service)\n   - Use real-time streaming API for faster response\n   - Implement proper error handling and retry logic\n   - Add confidence scoring for transcription results\n\n2. Implement OpenAI Whisper as a fallback option\n   - Use the whisper-1 model for offline processing\n   - Support local model for privacy-conscious users\n\n3. Add a service selection mechanism to switch between providers\n\nCode structure:\n```python\nclass SpeechRecognition:\n    def __init__(self, api_key=None, service=\"assemblyai\", fallback=True):\n        self.service = service\n        self.fallback = fallback\n        self.assemblyai_client = None\n        self.openai_client = None\n        \n        if service == \"assemblyai\" or fallback:\n            self.assemblyai_client = assemblyai.Client(api_key)\n            \n        if service == \"whisper\" or fallback:\n            self.openai_client = openai.OpenAI(api_key=api_key)\n    \n    async def transcribe_stream(self, audio_stream):\n        # Implementation for streaming transcription\n        try:\n            if self.service == \"assemblyai\":\n                return await self._transcribe_assemblyai_stream(audio_stream)\n            else:\n                return await self._transcribe_whisper(audio_stream)\n        except Exception as e:\n            if self.fallback:\n                # Try fallback service\n                return await self._transcribe_whisper(audio_stream)\n            raise e\n```\n\nImplement caching to avoid re-transcribing identical audio. Add speaker adaptation by allowing custom vocabulary for technical terms or names.",
+        "testStrategy": "1. Unit tests with pre-recorded audio samples of varying clarity and background noise\n2. Integration tests with actual API calls (using test API keys)\n3. Test fallback mechanism by simulating primary service failure\n4. Measure transcription accuracy against known text\n5. Test performance with different audio qualities and accents\n6. Verify error handling with invalid API keys and network failures",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Integrate AssemblyAI Streaming API",
+            "description": "Implement real-time speech-to-text transcription using the AssemblyAI Python SDK, enabling streaming audio input and handling API authentication.",
+            "dependencies": [],
+            "details": "Set up the AssemblyAI client, connect to the streaming endpoint, and process incoming audio streams for transcription. Ensure the implementation supports asynchronous operation for low-latency results.",
+            "status": "pending",
+            "testStrategy": "Test with live and pre-recorded audio streams, verify real-time transcription accuracy, and confirm correct API key usage."
+          },
+          {
+            "id": 2,
+            "title": "Implement Error Handling and Retry Logic",
+            "description": "Add robust error handling for API failures, network issues, and unexpected responses, including automatic retries with exponential backoff.",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Detect and classify errors from the AssemblyAI API, implement retry mechanisms for transient errors, and provide clear error messages for unrecoverable failures.",
+            "status": "pending",
+            "testStrategy": "Simulate API failures and network interruptions, verify retry behavior, and ensure errors are logged and surfaced appropriately."
+          },
+          {
+            "id": 3,
+            "title": "Add Confidence Scoring to Transcription Results",
+            "description": "Extract and expose confidence scores for each transcription result, enabling downstream consumers to assess transcription reliability.",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Parse confidence values from AssemblyAI responses and include them in the output data structure. Optionally, highlight or flag low-confidence segments.",
+            "status": "pending",
+            "testStrategy": "Validate that confidence scores are present and accurate in the output for various audio qualities and test edge cases with low-confidence input."
+          },
+          {
+            "id": 4,
+            "title": "Integrate OpenAI Whisper Fallback (Cloud and Local)",
+            "description": "Implement fallback transcription using OpenAI Whisper, supporting both cloud API and local model execution for privacy-sensitive scenarios.",
+            "dependencies": [
+              "3.2",
+              "3.3"
+            ],
+            "details": "Detect AssemblyAI failures and automatically switch to Whisper. Allow configuration for local model usage and ensure seamless transition between providers.",
+            "status": "pending",
+            "testStrategy": "Force AssemblyAI failures to trigger fallback, test both cloud and local Whisper modes, and compare transcription outputs for consistency."
+          },
+          {
+            "id": 5,
+            "title": "Build Service Selection and Caching Mechanism with Custom Vocabulary Support",
+            "description": "Develop logic to select between AssemblyAI and Whisper, cache transcription results for identical audio, and support custom vocabulary injection for improved accuracy.",
+            "dependencies": [
+              "3.4"
+            ],
+            "details": "Implement a provider selection interface, audio fingerprinting for caching, and mechanisms to pass custom vocabulary or context to the transcription engines.",
+            "status": "pending",
+            "testStrategy": "Test service switching, verify cache hits for repeated audio, and confirm that custom vocabulary improves recognition of technical terms or names."
+          },
+          {
+            "id": 6,
+            "title": "Implement Caching and Custom Vocabulary Support",
+            "description": "Develop a caching system for transcription results and implement custom vocabulary injection to improve recognition accuracy for technical terms, names, and domain-specific language.",
+            "details": "Create an audio fingerprinting system to identify identical audio inputs and cache their transcription results. Implement custom vocabulary injection for both AssemblyAI and Whisper services. Add support for user-defined technical terms, proper nouns, and domain-specific terminology. Include cache invalidation and size management.",
+            "status": "pending",
+            "dependencies": [
+              "3.5"
+            ],
+            "parentTaskId": 3
+          },
+          {
+            "id": 7,
+            "title": "Develop Comprehensive Tests for All Scenarios",
+            "description": "Create a comprehensive test suite covering all speech recognition scenarios, including different audio qualities, accents, error conditions, and performance benchmarks.",
+            "details": "Write unit tests for each component using mock objects. Create integration tests with real API calls using test keys. Test fallback mechanisms, error handling, caching behavior, and custom vocabulary. Include performance tests for different audio qualities and accents. Test with various network conditions and API failure scenarios.",
+            "status": "pending",
+            "dependencies": [
+              "3.6"
+            ],
+            "parentTaskId": 3
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Implement AI Text Enhancement Engine",
+        "description": "Create the AI text processing engine that uses OpenAI GPT to enhance transcribed text by correcting grammar, adding punctuation, and removing filler words.",
+        "details": "Develop an AITextProcessor class that:\n\n1. Integrates with OpenAI GPT-4o-mini API (primary) with fallback to GPT-3.5-turbo\n   - Use the latest model versions available (as of 2025)\n   - Implement efficient prompt engineering to minimize token usage\n\n2. Create specialized enhancement functions:\n   - Grammar correction\n   - Punctuation insertion\n   - Filler word removal (um, ah, like, etc.)\n   - Sentence structure improvement\n   - Proper noun capitalization\n\n3. Implement context-aware processing based on application type\n\nSample implementation:\n```python\nclass AITextProcessor:\n    def __init__(self, api_key, model=\"gpt-4o-mini\"):\n        self.client = openai.OpenAI(api_key=api_key)\n        self.model = model\n        self.base_prompt = \"\"\"Enhance the following transcribed text. Fix grammar, add appropriate punctuation, \n        remove filler words (um, ah, like, etc.), and improve clarity while preserving the original meaning and tone.\"\"\"\n    \n    def enhance_text(self, text, context=None, custom_instructions=None):\n        prompt = self.base_prompt\n        \n        if context:\n            prompt += f\"\\nThis text will be used in a {context} context.\"\n            \n        if custom_instructions:\n            prompt += f\"\\n{custom_instructions}\"\n            \n        response = self.client.chat.completions.create(\n            model=self.model,\n            messages=[\n                {\"role\": \"system\", \"content\": prompt},\n                {\"role\": \"user\", \"content\": text}\n            ],\n            temperature=0.3,  # Lower temperature for more consistent results\n            max_tokens=1024\n        )\n        \n        return response.choices[0].message.content\n```\n\nImplement a template system for custom AI prompts that users can modify. Add caching to avoid re-processing identical text. Include token usage tracking to manage API costs.",
+        "testStrategy": "1. Unit tests with various text samples containing common speech patterns and errors\n2. Test enhancement quality with different types of text (formal, casual, technical)\n3. Measure improvement metrics (grammar errors fixed, filler words removed)\n4. Test context-awareness with different application types\n5. Verify custom instruction handling\n6. Test fallback mechanisms and error handling\n7. Benchmark performance and token usage",
+        "priority": "high",
+        "dependencies": [
+          1,
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Develop Text Insertion System",
+        "description": "Create the text insertion module that detects cursor position and inserts enhanced text into any Windows application.",
+        "details": "Implement a TextInsertion class that:\n\n1. Uses pywin32 and pyautogui to detect cursor position and insert text\n   - Support for all major Windows applications (Office, browsers, text editors)\n   - Handle different text input methods (direct typing, clipboard paste)\n\n2. Implement application-specific formatting\n   - Detect active application using pygetwindow\n   - Apply appropriate formatting based on application context\n\n3. Add undo support and error recovery\n\nImplementation approach:\n```python\nclass TextInsertion:\n    def __init__(self):\n        self.last_insertion = None\n        self.clipboard_backup = None\n    \n    def get_active_application(self):\n        # Use pygetwindow to detect active window\n        active_window = pygetwindow.getActiveWindow()\n        return active_window.title if active_window else None\n    \n    def insert_text(self, text, use_clipboard=True):\n        # Backup current clipboard content\n        self.clipboard_backup = pyperclip.paste()\n        self.last_insertion = text\n        \n        try:\n            if use_clipboard:\n                # Use clipboard method (more reliable)\n                pyperclip.copy(text)\n                pyautogui.hotkey('ctrl', 'v')\n            else:\n                # Direct typing method (slower but works in some secure apps)\n                pyautogui.write(text)\n                \n            return True\n        except Exception as e:\n            logging.error(f\"Text insertion failed: {e}\")\n            return False\n        finally:\n            # Restore original clipboard content\n            if self.clipboard_backup is not None:\n                pyperclip.copy(self.clipboard_backup)\n    \n    def undo_insertion(self):\n        if self.last_insertion:\n            # Calculate number of characters to delete\n            chars_to_delete = len(self.last_insertion)\n            # Send backspace key that many times\n            for _ in range(chars_to_delete):\n                pyautogui.press('backspace')\n```\n\nImplement special handling for different application types (Word, Outlook, VS Code, etc.) with format preservation. Add a fallback mechanism for applications with unusual text input methods.",
+        "testStrategy": "1. Test insertion in various Windows applications (Word, Notepad, browsers, etc.)\n2. Verify cursor position detection accuracy\n3. Test undo functionality\n4. Measure insertion speed and reliability\n5. Test error handling when insertion fails\n6. Verify clipboard content is properly restored after insertion\n7. Test with different text lengths and special characters",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Implement Global Hotkey System",
+        "description": "Develop the hotkey management system that allows users to activate voice dictation from any application using customizable keyboard shortcuts.",
+        "details": "Create a HotkeyManager class that:\n\n1. Uses the global-hotkeys library to register system-wide keyboard shortcuts\n   - Default shortcut: Ctrl+Win+Space\n   - Support for push-to-talk mode (hold to record, release to process)\n   - Allow fully customizable key combinations\n\n2. Implement conflict resolution and error handling\n   - Detect and warn about conflicts with system or application shortcuts\n   - Provide fallback shortcuts if primary is unavailable\n\n3. Add visual and audio feedback for hotkey activation\n\nImplementation approach:\n```python\nclass HotkeyManager:\n    def __init__(self, config):\n        self.hotkeys = {}\n        self.callbacks = {}\n        self.default_hotkey = config.get('hotkey', 'ctrl+win+space')\n        self.push_to_talk = config.get('push_to_talk', True)\n        \n    def register_hotkey(self, hotkey, callback, description):\n        try:\n            # Register with global-hotkeys library\n            key_id = register_hotkey(hotkey)\n            self.hotkeys[hotkey] = key_id\n            self.callbacks[key_id] = callback\n            return True\n        except Exception as e:\n            logging.error(f\"Failed to register hotkey {hotkey}: {e}\")\n            return False\n    \n    def start_listening(self):\n        # Start the hotkey listener thread\n        start_checking_hotkeys(self._hotkey_callback)\n        \n    def _hotkey_callback(self, key_id):\n        if key_id in self.callbacks:\n            self.callbacks[key_id]()\n            \n    def unregister_all(self):\n        # Clean up all registered hotkeys\n        for hotkey, key_id in self.hotkeys.items():\n            unregister_hotkey(key_id)\n        self.hotkeys = {}\n        self.callbacks = {}\n```\n\nImplement a system tray icon with visual feedback when recording is active. Add support for multiple hotkeys for different functions (start recording, cancel, undo, etc.).",
+        "testStrategy": "1. Test hotkey registration and activation across different Windows applications\n2. Verify push-to-talk mode works correctly\n3. Test customization of hotkeys through configuration\n4. Verify conflict detection and resolution\n5. Test visual and audio feedback mechanisms\n6. Measure response time from hotkey press to action\n7. Test cleanup and resource management when application exits",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Create Configuration Management System",
+        "description": "Implement a configuration system that manages user preferences, API keys, and application settings with secure storage.",
+        "details": "Develop a ConfigManager class that:\n\n1. Stores and retrieves user preferences\n   - Hotkey settings\n   - API keys (encrypted)\n   - Audio settings\n   - AI enhancement preferences\n\n2. Implements secure storage for sensitive information\n   - Use Windows Data Protection API (DPAPI) via pywin32 for encrypting API keys\n   - Store configuration in user's AppData folder\n\n3. Supports multiple configuration profiles\n\nImplementation approach:\n```python\nclass ConfigManager:\n    def __init__(self, config_file=None):\n        self.config_file = config_file or os.path.join(\n            os.environ.get('APPDATA'), \n            'VoiceDictationAssistant', \n            'config.yaml'\n        )\n        self.config = self._load_config()\n        \n    def _load_config(self):\n        if os.path.exists(self.config_file):\n            try:\n                with open(self.config_file, 'r') as f:\n                    return yaml.safe_load(f) or {}\n            except Exception as e:\n                logging.error(f\"Failed to load config: {e}\")\n                return self._create_default_config()\n        else:\n            return self._create_default_config()\n    \n    def _create_default_config(self):\n        config = {\n            'hotkey': 'ctrl+win+space',\n            'push_to_talk': True,\n            'api_keys': {\n                'assemblyai': '',\n                'openai': ''\n            },\n            'audio': {\n                'sample_rate': 16000,\n                'channels': 1,\n                'chunk_size': 1024\n            },\n            'ai': {\n                'model': 'gpt-4o-mini',\n                'remove_fillers': True,\n                'improve_grammar': True\n            }\n        }\n        self._save_config(config)\n        return config\n    \n    def _save_config(self, config=None):\n        if config is not None:\n            self.config = config\n            \n        os.makedirs(os.path.dirname(self.config_file), exist_ok=True)\n        with open(self.config_file, 'w') as f:\n            yaml.dump(self.config, f)\n    \n    def get(self, key, default=None):\n        # Support nested keys like 'audio.sample_rate'\n        keys = key.split('.')\n        value = self.config\n        for k in keys:\n            if isinstance(value, dict) and k in value:\n                value = value[k]\n            else:\n                return default\n        return value\n    \n    def set(self, key, value):\n        keys = key.split('.')\n        config = self.config\n        for k in keys[:-1]:\n            if k not in config:\n                config[k] = {}\n            config = config[k]\n        config[keys[-1]] = value\n        self._save_config()\n        \n    def encrypt_api_key(self, service, key):\n        # Use DPAPI to encrypt the API key\n        if key:\n            encrypted_data = win32crypt.CryptProtectData(\n                key.encode(), \n                description=\"VoiceDictationAssistant\", \n                entropy=None, \n                reserved=0, \n                prompt_struct=None\n            )\n            self.set(f'api_keys.{service}', base64.b64encode(encrypted_data).decode())\n            \n    def decrypt_api_key(self, service):\n        encrypted_key = self.get(f'api_keys.{service}')\n        if not encrypted_key:\n            return ''\n            \n        try:\n            encrypted_data = base64.b64decode(encrypted_key)\n            decrypted_data, _ = win32crypt.CryptUnprotectData(\n                encrypted_data,\n                entropy=None,\n                reserved=0,\n                prompt_struct=None\n            )\n            return decrypted_data.decode()\n        except Exception as e:\n            logging.error(f\"Failed to decrypt API key: {e}\")\n            return ''\n```\n\nImplement a configuration wizard for first-time setup. Add validation for configuration values to prevent errors.",
+        "testStrategy": "1. Test loading and saving configuration files\n2. Verify encryption and decryption of API keys\n3. Test default configuration creation\n4. Verify nested configuration access\n5. Test configuration persistence across application restarts\n6. Verify configuration file permissions are secure\n7. Test configuration validation\n8. Verify multiple profile support",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Implement Application Context Awareness",
+        "description": "Develop the system that detects the active application and adapts text formatting and behavior based on the application context.",
+        "details": "Create an ApplicationContext class that:\n\n1. Detects the active application using pygetwindow\n   - Identify common applications (Word, Outlook, browsers, code editors)\n   - Determine application type based on window class and title\n\n2. Provides context-specific formatting rules\n   - Email formatting for Outlook/Gmail\n   - Document formatting for Word/Google Docs\n   - Code comment formatting for IDEs\n\n3. Adapts AI enhancement based on context\n\nImplementation approach:\n```python\nclass ApplicationContext:\n    def __init__(self):\n        # Define known application patterns\n        self.app_patterns = {\n            'email': ['outlook', 'thunderbird', 'gmail', 'mail'],\n            'document': ['word', 'writer', 'docs', 'pages'],\n            'code': ['code', 'visual studio', 'intellij', 'pycharm', 'eclipse'],\n            'browser': ['chrome', 'firefox', 'edge', 'safari'],\n            'chat': ['teams', 'slack', 'discord', 'whatsapp']\n        }\n        \n        # Define context-specific formatting templates\n        self.formatting_templates = {\n            'email': {\n                'formal': True,\n                'paragraphs': True,\n                'greeting': True,\n                'signature': False\n            },\n            'document': {\n                'formal': True,\n                'paragraphs': True,\n                'academic': False\n            },\n            'code': {\n                'comment_style': True,\n                'technical': True,\n                'concise': True\n            },\n            'chat': {\n                'formal': False,\n                'concise': True,\n                'conversational': True\n            }\n        }\n    \n    def detect_context(self):\n        # Get active window information\n        active_window = pygetwindow.getActiveWindow()\n        if not active_window:\n            return 'unknown'\n            \n        window_title = active_window.title.lower()\n        \n        # Determine application type based on window title\n        for context_type, patterns in self.app_patterns.items():\n            if any(pattern in window_title for pattern in patterns):\n                return context_type\n                \n        return 'general'\n    \n    def get_formatting_template(self, context_type=None):\n        if not context_type:\n            context_type = self.detect_context()\n            \n        return self.formatting_templates.get(context_type, self.formatting_templates.get('general', {}))\n    \n    def get_ai_prompt_for_context(self, context_type=None):\n        if not context_type:\n            context_type = self.detect_context()\n            \n        prompts = {\n            'email': \"Format this as a professional email. Use proper email etiquette.\",\n            'document': \"Format this as a well-structured document paragraph.\",\n            'code': \"Format this as a clear code comment, using technical language appropriately.\",\n            'chat': \"Format this as a conversational message, keeping it natural but clear.\"\n        }\n        \n        return prompts.get(context_type, \"\")\n```\n\nImplement user-defined context rules and templates. Add learning capability to improve context detection over time based on user corrections.",
+        "testStrategy": "1. Test application detection with various Windows applications\n2. Verify context-specific formatting is applied correctly\n3. Test with different window titles and states\n4. Measure detection accuracy for common applications\n5. Test custom context rules and templates\n6. Verify AI prompt adaptation based on context\n7. Test learning capability with simulated user corrections",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          4,
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Develop Core Application Controller",
+        "description": "Create the main application controller that coordinates all components and implements the core dictation workflow.",
+        "details": "Implement an ApplicationController class that:\n\n1. Coordinates all system components\n   - Audio capture\n   - Speech recognition\n   - AI text enhancement\n   - Text insertion\n   - Hotkey management\n\n2. Implements the main dictation workflow\n   - Start recording on hotkey press\n   - Process audio through speech recognition\n   - Enhance text with AI\n   - Insert text at cursor position\n   - Provide feedback to user\n\n3. Handles error conditions and recovery\n\nImplementation approach:\n```python\nclass ApplicationController:\n    def __init__(self, config_file=None):\n        # Initialize configuration\n        self.config_manager = ConfigManager(config_file)\n        \n        # Initialize components\n        self.hotkey_manager = HotkeyManager(self.config_manager)\n        self.audio_capture = None  # Initialized on demand\n        self.speech_recognition = None  # Initialized on demand\n        self.text_processor = None  # Initialized on demand\n        self.text_insertion = TextInsertion()\n        self.app_context = ApplicationContext()\n        \n        # State variables\n        self.is_recording = False\n        self.is_processing = False\n        self.last_error = None\n        \n    def initialize(self):\n        # Initialize API-dependent components\n        assemblyai_key = self.config_manager.decrypt_api_key('assemblyai')\n        openai_key = self.config_manager.decrypt_api_key('openai')\n        \n        if not assemblyai_key or not openai_key:\n            # Show configuration wizard if keys are missing\n            self._show_config_wizard()\n            assemblyai_key = self.config_manager.decrypt_api_key('assemblyai')\n            openai_key = self.config_manager.decrypt_api_key('openai')\n        \n        self.speech_recognition = SpeechRecognition(api_key=assemblyai_key)\n        self.text_processor = AITextProcessor(api_key=openai_key)\n        \n        # Register hotkeys\n        self.hotkey_manager.register_hotkey(\n            self.config_manager.get('hotkey', 'ctrl+win+space'),\n            self._toggle_recording,\n            \"Toggle recording\"\n        )\n        \n        # Start hotkey listener\n        self.hotkey_manager.start_listening()\n        \n    def _toggle_recording(self):\n        if self.is_recording:\n            self._stop_recording()\n        else:\n            self._start_recording()\n    \n    def _start_recording(self):\n        if self.is_recording or self.is_processing:\n            return\n            \n        try:\n            # Show visual feedback\n            self._show_recording_indicator(True)\n            \n            # Initialize audio capture\n            self.audio_capture = AudioCapture(\n                sample_rate=self.config_manager.get('audio.sample_rate', 16000),\n                channels=self.config_manager.get('audio.channels', 1),\n                chunk_size=self.config_manager.get('audio.chunk_size', 1024)\n            )\n            \n            # Start recording\n            self.audio_capture.start_recording()\n            self.is_recording = True\n            \n        except Exception as e:\n            self.last_error = str(e)\n            logging.error(f\"Failed to start recording: {e}\")\n            self._show_error_notification(\"Failed to start recording\")\n    \n    def _stop_recording(self):\n        if not self.is_recording:\n            return\n            \n        try:\n            # Stop recording\n            audio_data = self.audio_capture.stop_recording()\n            self.is_recording = False\n            self._show_recording_indicator(False)\n            \n            # Process the recording\n            self.is_processing = True\n            self._show_processing_indicator(True)\n            \n            # Run processing in a separate thread to keep UI responsive\n            threading.Thread(target=self._process_audio, args=(audio_data,)).start()\n            \n        except Exception as e:\n            self.last_error = str(e)\n            logging.error(f\"Failed to stop recording: {e}\")\n            self._show_error_notification(\"Failed to stop recording\")\n            self.is_recording = False\n            self.is_processing = False\n    \n    def _process_audio(self, audio_data):\n        try:\n            # Transcribe audio\n            transcription = self.speech_recognition.transcribe(audio_data)\n            \n            if not transcription:\n                raise Exception(\"Transcription failed or returned empty result\")\n                \n            # Detect application context\n            context = self.app_context.detect_context()\n            context_prompt = self.app_context.get_ai_prompt_for_context(context)\n            \n            # Enhance text with AI\n            enhanced_text = self.text_processor.enhance_text(\n                transcription,\n                context=context,\n                custom_instructions=context_prompt\n            )\n            \n            # Insert text at cursor position\n            self.text_insertion.insert_text(enhanced_text)\n            \n        except Exception as e:\n            self.last_error = str(e)\n            logging.error(f\"Processing failed: {e}\")\n            self._show_error_notification(\"Processing failed\")\n            \n        finally:\n            self.is_processing = False\n            self._show_processing_indicator(False)\n    \n    def _show_recording_indicator(self, is_recording):\n        # Implementation for visual feedback\n        pass\n        \n    def _show_processing_indicator(self, is_processing):\n        # Implementation for visual feedback\n        pass\n        \n    def _show_error_notification(self, message):\n        # Implementation for error notification\n        pass\n        \n    def _show_config_wizard(self):\n        # Implementation for configuration wizard\n        pass\n        \n    def shutdown(self):\n        # Clean up resources\n        if self.hotkey_manager:\n            self.hotkey_manager.unregister_all()\n            \n        if self.audio_capture:\n            self.audio_capture.close()\n```\n\nImplement a system tray application with status indicators. Add performance monitoring and usage statistics.",
+        "testStrategy": "1. Test the complete dictation workflow from hotkey press to text insertion\n2. Verify component coordination and state management\n3. Test error handling and recovery in various failure scenarios\n4. Measure end-to-end performance (time from hotkey to text insertion)\n5. Test resource management and cleanup\n6. Verify visual feedback mechanisms\n7. Test with various audio inputs and application contexts",
+        "priority": "high",
+        "dependencies": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Implement System Tray Application",
+        "description": "Create a system tray application with visual feedback, status indicators, and quick access to settings.",
+        "details": "Develop a SystemTrayApp class that:\n\n1. Creates a Windows system tray icon\n   - Use pystray library for system tray integration\n   - Show application status (idle, recording, processing)\n   - Provide quick access to common functions\n\n2. Implements visual feedback for dictation states\n   - Recording indicator (red icon)\n   - Processing indicator (yellow icon)\n   - Ready indicator (green icon)\n   - Error indicator (exclamation mark)\n\n3. Provides a settings menu and about dialog\n\nImplementation approach:\n```python\nclass SystemTrayApp:\n    def __init__(self, app_controller):\n        self.app_controller = app_controller\n        self.icon = None\n        self.current_state = 'idle'\n        \n        # Load icon images\n        self.icons = {\n            'idle': Image.open('resources/icon_idle.png'),\n            'recording': Image.open('resources/icon_recording.png'),\n            'processing': Image.open('resources/icon_processing.png'),\n            'error': Image.open('resources/icon_error.png')\n        }\n        \n    def setup(self):\n        # Create system tray menu\n        menu = (\n            pystray.MenuItem('Status: Idle', self._status_item, enabled=False),\n            pystray.Menu.SEPARATOR,\n            pystray.MenuItem('Start Dictation', self._toggle_dictation),\n            pystray.MenuItem('Settings', self._open_settings),\n            pystray.Menu.SEPARATOR,\n            pystray.MenuItem('About', self._show_about),\n            pystray.MenuItem('Exit', self._exit_app)\n        )\n        \n        # Create system tray icon\n        self.icon = pystray.Icon(\n            'VoiceDictationAssistant',\n            self.icons['idle'],\n            'Voice Dictation Assistant',\n            menu\n        )\n        \n    def run(self):\n        # Start the system tray icon\n        self.icon.run()\n        \n    def update_state(self, state):\n        if state not in self.icons:\n            state = 'idle'\n            \n        self.current_state = state\n        self.icon.icon = self.icons[state]\n        \n        # Update status menu item\n        status_text = f'Status: {state.capitalize()}'\n        self.icon.menu = self.icon.menu.update_item('Status: Idle', pystray.MenuItem(status_text, self._status_item, enabled=False))\n        \n    def show_notification(self, title, message):\n        self.icon.notify(message, title)\n        \n    def _status_item(self):\n        # Dummy function for status display\n        pass\n        \n    def _toggle_dictation(self):\n        self.app_controller._toggle_recording()\n        \n    def _open_settings(self):\n        # Open settings dialog\n        # Implementation depends on UI framework choice\n        pass\n        \n    def _show_about(self):\n        # Show about dialog\n        # Implementation depends on UI framework choice\n        pass\n        \n    def _exit_app(self):\n        # Clean up and exit\n        self.app_controller.shutdown()\n        self.icon.stop()\n```\n\nImplement a simple settings dialog using tkinter or PyQt for configuration. Add keyboard shortcut hints in the menu.",
+        "testStrategy": "1. Test system tray icon creation and visibility\n2. Verify menu functionality and state updates\n3. Test visual feedback for different application states\n4. Verify notification display\n5. Test settings dialog functionality\n6. Measure resource usage of the system tray application\n7. Test application exit and cleanup",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Implement Error Handling and Logging System",
+        "description": "Develop a comprehensive error handling and logging system to track issues, provide user feedback, and facilitate troubleshooting.",
+        "details": "Create an ErrorHandler class that:\n\n1. Implements centralized error handling\n   - Categorize errors (network, API, system, user)\n   - Provide user-friendly error messages\n   - Log detailed error information for debugging\n\n2. Develops a robust logging system\n   - Use Python's logging module with rotating file handlers\n   - Log different levels (DEBUG, INFO, WARNING, ERROR)\n   - Include contextual information in log entries\n\n3. Implements error recovery strategies\n   - Automatic retry for transient errors\n   - Fallback options for service failures\n   - Graceful degradation of functionality\n\nImplementation approach:\n```python\nclass ErrorHandler:\n    def __init__(self, config_manager):\n        self.config_manager = config_manager\n        self.setup_logging()\n        \n    def setup_logging(self):\n        # Create logs directory in user's AppData\n        log_dir = os.path.join(\n            os.environ.get('APPDATA'),\n            'VoiceDictationAssistant',\n            'logs'\n        )\n        os.makedirs(log_dir, exist_ok=True)\n        \n        # Configure logging\n        log_file = os.path.join(log_dir, 'app.log')\n        \n        # Create rotating file handler (10 files, 1MB each)\n        file_handler = RotatingFileHandler(\n            log_file, \n            maxBytes=1024*1024, \n            backupCount=10\n        )\n        \n        # Define log format\n        log_format = logging.Formatter(\n            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'\n        )\n        file_handler.setFormatter(log_format)\n        \n        # Configure root logger\n        root_logger = logging.getLogger()\n        root_logger.setLevel(logging.INFO)\n        root_logger.addHandler(file_handler)\n        \n        # Set higher level for third-party libraries\n        logging.getLogger('urllib3').setLevel(logging.WARNING)\n        logging.getLogger('PIL').setLevel(logging.WARNING)\n        \n    def handle_error(self, error, error_type=None, context=None, show_notification=True):\n        # Determine error type if not provided\n        if error_type is None:\n            error_type = self._categorize_error(error)\n            \n        # Log the error with context\n        error_message = str(error)\n        context_str = f\" (Context: {context})\" if context else \"\"\n        logging.error(f\"{error_type} error: {error_message}{context_str}\")\n        \n        # Get user-friendly message\n        user_message = self._get_user_message(error_type, error)\n        \n        # Show notification if requested\n        if show_notification:\n            # Implementation depends on notification system\n            pass\n            \n        return {\n            'type': error_type,\n            'message': user_message,\n            'original_error': error_message,\n            'context': context\n        }\n        \n    def _categorize_error(self, error):\n        error_str = str(error).lower()\n        \n        if isinstance(error, requests.exceptions.RequestException):\n            return 'network'\n            \n        if 'api key' in error_str or 'authentication' in error_str:\n            return 'api'\n            \n        if 'permission' in error_str or 'access' in error_str:\n            return 'permission'\n            \n        if 'microphone' in error_str or 'audio' in error_str:\n            return 'audio'\n            \n        return 'general'\n        \n    def _get_user_message(self, error_type, error):\n        error_str = str(error).lower()\n        \n        messages = {\n            'network': \"Network connection issue. Please check your internet connection.\",\n            'api': \"API authentication error. Please check your API keys in settings.\",\n            'permission': \"Permission denied. The application needs additional permissions.\",\n            'audio': \"Audio device error. Please check your microphone settings.\",\n            'general': \"An error occurred. Please check the logs for details.\"\n        }\n        \n        # Special case handling\n        if 'rate limit' in error_str:\n            return \"API rate limit exceeded. Please try again in a moment.\"\n            \n        if 'no microphone' in error_str:\n            return \"No microphone detected. Please connect a microphone and try again.\"\n            \n        return messages.get(error_type, messages['general'])\n        \n    def get_log_file_path(self):\n        # Return path to current log file for troubleshooting\n        log_dir = os.path.join(\n            os.environ.get('APPDATA'),\n            'VoiceDictationAssistant',\n            'logs'\n        )\n        return os.path.join(log_dir, 'app.log')\n```\n\nImplement automatic error reporting (opt-in) for improving the application. Add log rotation to prevent excessive disk usage.",
+        "testStrategy": "1. Test error categorization with various error types\n2. Verify logging system creates appropriate log files\n3. Test user-friendly message generation\n4. Verify error recovery strategies work as expected\n5. Test log rotation with simulated large logs\n6. Verify contextual information is properly included in logs\n7. Test performance impact of logging during normal operation",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Implement Performance Monitoring and Analytics",
+        "description": "Create a system to monitor application performance, track usage patterns, and collect anonymous analytics to improve the user experience.",
+        "details": "Develop a PerformanceMonitor class that:\n\n1. Tracks key performance metrics\n   - Response time (from hotkey to text insertion)\n   - Transcription accuracy (estimated)\n   - API latency\n   - Resource usage (CPU, memory)\n\n2. Collects anonymous usage statistics (opt-in)\n   - Feature usage frequency\n   - Error rates\n   - Common application contexts\n   - Session duration\n\n3. Provides performance insights and recommendations\n\nImplementation approach:\n```python\nclass PerformanceMonitor:\n    def __init__(self, config_manager):\n        self.config_manager = config_manager\n        self.metrics = {}\n        self.session_start = time.time()\n        self.analytics_enabled = config_manager.get('analytics.enabled', False)\n        \n        # Initialize metrics storage\n        self._reset_metrics()\n        \n    def _reset_metrics(self):\n        self.metrics = {\n            'dictation_count': 0,\n            'total_audio_duration': 0,\n            'total_response_time': 0,\n            'api_calls': {\n                'assemblyai': 0,\n                'openai': 0\n            },\n            'errors': {\n                'network': 0,\n                'api': 0,\n                'audio': 0,\n                'general': 0\n            },\n            'contexts': {},\n            'session_duration': 0\n        }\n        \n    def start_operation(self, operation_name):\n        # Start timing an operation\n        return {\n            'name': operation_name,\n            'start_time': time.time()\n        }\n        \n    def end_operation(self, operation):\n        # End timing an operation and record metrics\n        duration = time.time() - operation['start_time']\n        \n        # Store in appropriate metric\n        if operation['name'] == 'dictation':\n            self.metrics['dictation_count'] += 1\n            self.metrics['total_response_time'] += duration\n            \n        elif operation['name'].startswith('api_'):\n            api_name = operation['name'].split('_')[1]\n            if api_name in self.metrics['api_calls']:\n                self.metrics['api_calls'][api_name] += 1\n                \n        return duration\n        \n    def record_audio_duration(self, duration):\n        self.metrics['total_audio_duration'] += duration\n        \n    def record_error(self, error_type):\n        if error_type in self.metrics['errors']:\n            self.metrics['errors'][error_type] += 1\n            \n    def record_context(self, context):\n        if context not in self.metrics['contexts']:\n            self.metrics['contexts'][context] = 0\n            \n        self.metrics['contexts'][context] += 1\n        \n    def get_average_response_time(self):\n        if self.metrics['dictation_count'] == 0:\n            return 0\n            \n        return self.metrics['total_response_time'] / self.metrics['dictation_count']\n        \n    def get_session_duration(self):\n        return time.time() - self.session_start\n        \n    def get_performance_summary(self):\n        avg_response_time = self.get_average_response_time()\n        session_duration = self.get_session_duration()\n        \n        return {\n            'dictation_count': self.metrics['dictation_count'],\n            'average_response_time': avg_response_time,\n            'session_duration': session_duration,\n            'error_rate': sum(self.metrics['errors'].values()) / max(1, self.metrics['dictation_count']),\n            'most_used_context': max(self.metrics['contexts'].items(), key=lambda x: x[1])[0] if self.metrics['contexts'] else None\n        }\n        \n    def get_performance_recommendations(self):\n        recommendations = []\n        avg_response_time = self.get_average_response_time()\n        \n        # Response time recommendations\n        if avg_response_time > 5.0:\n            recommendations.append(\"Response time is higher than optimal. Consider using a faster internet connection or adjusting audio quality settings.\")\n            \n        # Error rate recommendations\n        error_rate = sum(self.metrics['errors'].values()) / max(1, self.metrics['dictation_count'])\n        if error_rate > 0.1:  # More than 10% error rate\n            recommendations.append(\"Error rate is high. Check the logs for common errors and verify API keys and microphone settings.\")\n            \n        return recommendations\n        \n    def save_metrics(self):\n        # Only save if analytics are enabled\n        if not self.analytics_enabled:\n            return\n            \n        # Update session duration\n        self.metrics['session_duration'] = self.get_session_duration()\n        \n        # Save to local storage\n        metrics_dir = os.path.join(\n            os.environ.get('APPDATA'),\n            'VoiceDictationAssistant',\n            'metrics'\n        )\n        os.makedirs(metrics_dir, exist_ok=True)\n        \n        # Use timestamp as filename\n        filename = f\"metrics_{int(time.time())}.json\"\n        filepath = os.path.join(metrics_dir, filename)\n        \n        with open(filepath, 'w') as f:\n            json.dump(self.metrics, f)\n```\n\nImplement a system to periodically upload anonymous analytics (with explicit user consent). Add a dashboard in the settings to show performance metrics.",
+        "testStrategy": "1. Test metric collection for various operations\n2. Verify timing accuracy for response time measurements\n3. Test analytics storage and retrieval\n4. Verify recommendations are appropriate based on metrics\n5. Test opt-in/opt-out functionality for analytics\n6. Measure the performance impact of the monitoring system itself\n7. Test with simulated high load to verify metric accuracy",
+        "priority": "low",
+        "dependencies": [
+          1,
+          9,
+          11
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Create Installation Package and Deployment Process",
+        "description": "Develop an installation package and deployment process for easy distribution and installation of the application.",
+        "details": "Implement a deployment system that:\n\n1. Creates a standalone Windows executable\n   - Use PyInstaller to package the application\n   - Include all required dependencies\n   - Optimize package size by excluding unnecessary files\n\n2. Creates an installer with proper Windows integration\n   - Use NSIS (Nullsoft Scriptable Install System) for creating the installer\n   - Add Start Menu shortcuts\n   - Register for automatic startup (optional)\n   - Create uninstaller\n\n3. Implements automatic updates\n   - Check for updates on startup\n   - Download and apply updates in the background\n   - Notify user of available updates\n\nImplementation approach:\n```python\n# PyInstaller spec file (voice_dictation.spec)\n\n# -*- mode: python ; coding: utf-8 -*-\n\nblock_cipher = None\n\na = Analysis(\n    ['main.py'],\n    pathex=[],\n    binaries=[],\n    datas=[\n        ('resources/*.png', 'resources'),\n        ('resources/*.ico', 'resources'),\n    ],\n    hiddenimports=[\n        'pyaudio',\n        'assemblyai',\n        'openai',\n        'pywin32',\n        'pyautogui',\n        'pygetwindow',\n        'pyperclip',\n        'pystray',\n        'PIL',\n    ],\n    hookspath=[],\n    hooksconfig={},\n    runtime_hooks=[],\n    excludes=[],\n    win_no_prefer_redirects=False,\n    win_private_assemblies=False,\n    cipher=block_cipher,\n    noarchive=False,\n)\n\npyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)\n\nexe = EXE(\n    pyz,\n    a.scripts,\n    a.binaries,\n    a.zipfiles,\n    a.datas,\n    [],\n    name='VoiceDictationAssistant',\n    debug=False,\n    bootloader_ignore_signals=False,\n    strip=False,\n    upx=True,\n    upx_exclude=[],\n    runtime_tmpdir=None,\n    console=False,\n    disable_windowed_traceback=False,\n    argv_emulation=False,\n    target_arch=None,\n    codesign_identity=None,\n    entitlements_file=None,\n    icon='resources/app_icon.ico',\n)\n```\n\n```nsi\n# NSIS Installer Script\n\n!define APPNAME \"Voice Dictation Assistant\"\n!define COMPANYNAME \"YourCompany\"\n!define DESCRIPTION \"AI-powered voice dictation for Windows\"\n!define VERSIONMAJOR 1\n!define VERSIONMINOR 0\n!define VERSIONBUILD 0\n\n# Define installer name\nOutFile \"VoiceDictationAssistant-Setup-${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}.exe\"\n\n# Default installation directory\nInstallDir \"$PROGRAMFILES\\${COMPANYNAME}\\${APPNAME}\"\n\n# Request application privileges\nRequestExecutionLevel admin\n\n# Interface Settings\nName \"${APPNAME}\"\n!include \"MUI2.nsh\"\n!define MUI_ICON \"resources\\app_icon.ico\"\n\n# Pages\n!insertmacro MUI_PAGE_WELCOME\n!insertmacro MUI_PAGE_LICENSE \"LICENSE.txt\"\n!insertmacro MUI_PAGE_DIRECTORY\n!insertmacro MUI_PAGE_INSTFILES\n!insertmacro MUI_PAGE_FINISH\n\n# Uninstaller pages\n!insertmacro MUI_UNPAGE_CONFIRM\n!insertmacro MUI_UNPAGE_INSTFILES\n\n# Languages\n!insertmacro MUI_LANGUAGE \"English\"\n\n# Installer sections\nSection \"Install\"\n    SetOutPath $INSTDIR\n    \n    # Files to install\n    File /r \"dist\\VoiceDictationAssistant\\*.*\"\n    \n    # Create uninstaller\n    WriteUninstaller \"$INSTDIR\\uninstall.exe\"\n    \n    # Start Menu shortcuts\n    CreateDirectory \"$SMPROGRAMS\\${COMPANYNAME}\"\n    CreateShortcut \"$SMPROGRAMS\\${COMPANYNAME}\\${APPNAME}.lnk\" \"$INSTDIR\\VoiceDictationAssistant.exe\"\n    CreateShortcut \"$SMPROGRAMS\\${COMPANYNAME}\\Uninstall ${APPNAME}.lnk\" \"$INSTDIR\\uninstall.exe\"\n    \n    # Registry information for Add/Remove Programs\n    WriteRegStr HKLM \"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${COMPANYNAME} ${APPNAME}\" \"DisplayName\" \"${APPNAME}\"\n    WriteRegStr HKLM \"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${COMPANYNAME} ${APPNAME}\" \"UninstallString\" \"$\\\"$INSTDIR\\uninstall.exe$\\\"\"\n    WriteRegStr HKLM \"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${COMPANYNAME} ${APPNAME}\" \"DisplayIcon\" \"$\\\"$INSTDIR\\VoiceDictationAssistant.exe$\\\"\"\n    WriteRegStr HKLM \"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${COMPANYNAME} ${APPNAME}\" \"Publisher\" \"${COMPANYNAME}\"\n    WriteRegStr HKLM \"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${COMPANYNAME} ${APPNAME}\" \"DisplayVersion\" \"${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}\"\n    \n    # Optional: Register for automatic startup\n    WriteRegStr HKCU \"Software\\Microsoft\\Windows\\CurrentVersion\\Run\" \"${APPNAME}\" \"$\\\"$INSTDIR\\VoiceDictationAssistant.exe$\\\"\"\nSectionEnd\n\n# Uninstaller section\nSection \"Uninstall\"\n    # Remove files and directories\n    Delete \"$INSTDIR\\*.*\"\n    RMDir /r \"$INSTDIR\"\n    \n    # Remove shortcuts\n    Delete \"$SMPROGRAMS\\${COMPANYNAME}\\${APPNAME}.lnk\"\n    Delete \"$SMPROGRAMS\\${COMPANYNAME}\\Uninstall ${APPNAME}.lnk\"\n    RMDir \"$SMPROGRAMS\\${COMPANYNAME}\"\n    \n    # Remove registry entries\n    DeleteRegKey HKLM \"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${COMPANYNAME} ${APPNAME}\"\n    DeleteRegValue HKCU \"Software\\Microsoft\\Windows\\CurrentVersion\\Run\" \"${APPNAME}\"\nSectionEnd\n```\n\nImplement a build script to automate the packaging process. Add digital signing for the installer to improve security and user trust.",
+        "testStrategy": "1. Test installation on clean Windows 10 and 11 systems\n2. Verify all dependencies are properly included\n3. Test Start Menu shortcuts and uninstaller\n4. Verify automatic startup option works correctly\n5. Test update mechanism with simulated new versions\n6. Verify installer size is optimized\n7. Test installation with different user permission levels\n8. Verify uninstallation removes all application files and registry entries",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          9,
+          10,
+          11,
+          12
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Create User Documentation and Help System",
+        "description": "Develop comprehensive user documentation and an in-application help system to assist users in getting the most out of the application.",
+        "details": "Implement a documentation system that:\n\n1. Creates user-friendly documentation\n   - Quick start guide\n   - Feature overview\n   - Troubleshooting section\n   - FAQ\n\n2. Develops an in-application help system\n   - Context-sensitive help\n   - Tooltips for settings\n   - Keyboard shortcut reference\n\n3. Provides usage examples and best practices\n\nImplementation approach:\n```python\nclass HelpSystem:\n    def __init__(self, config_manager):\n        self.config_manager = config_manager\n        self.help_topics = self._load_help_topics()\n        \n    def _load_help_topics(self):\n        # Load help topics from embedded resources or external files\n        topics = {\n            'getting_started': {\n                'title': 'Getting Started',\n                'content': '''\n                # Getting Started with Voice Dictation Assistant\n                \n                ## Quick Setup\n                1. Press Ctrl+Win+Space to start dictation\n                2. Speak clearly into your microphone\n                3. Release the keys to process and insert text\n                \n                ## First-Time Setup\n                - Enter your API keys in the settings\n                - Customize keyboard shortcuts if desired\n                - Test with a short phrase to verify everything works\n                '''\n            },\n            'keyboard_shortcuts': {\n                'title': 'Keyboard Shortcuts',\n                'content': '''\n                # Keyboard Shortcuts\n                \n                - **Ctrl+Win+Space**: Start/stop dictation (default, customizable)\n                - **Ctrl+Win+Z**: Undo last dictation\n                - **Ctrl+Win+S**: Open settings\n                - **Ctrl+Win+H**: Show help\n                '''\n            },\n            'troubleshooting': {\n                'title': 'Troubleshooting',\n                'content': '''\n                # Troubleshooting\n                \n                ## Common Issues\n                \n                ### Dictation Not Working\n                - Check that your microphone is connected and working\n                - Verify API keys are entered correctly\n                - Ensure you have an active internet connection\n                \n                ### Text Not Inserting\n                - Some applications with enhanced security may block text insertion\n                - Try using clipboard insertion method in settings\n                \n                ### Poor Transcription Quality\n                - Speak clearly and at a moderate pace\n                - Reduce background noise\n                - Use a better quality microphone if available\n                '''\n            }\n        }\n        \n        return topics\n        \n    def get_help_topic(self, topic_id):\n        return self.help_topics.get(topic_id, {\n            'title': 'Topic Not Found',\n            'content': 'The requested help topic was not found.'\n        })\n        \n    def get_context_help(self, context):\n        # Return context-specific help based on application state\n        context_help = {\n            'recording': 'Speak clearly into your microphone. Release the keys when finished.',\n            'processing': 'Your dictation is being processed. Please wait a moment.',\n            'error': 'An error occurred. Check the troubleshooting section for help.',\n            'settings': 'Configure your API keys, hotkeys, and preferences here.'\n        }\n        \n        return context_help.get(context, 'Press Ctrl+Win+Space to start dictation.')\n        \n    def get_tooltip(self, element_id):\n        # Return tooltips for UI elements\n        tooltips = {\n            'assemblyai_key': 'Enter your AssemblyAI API key. You can get one from assemblyai.com',\n            'openai_key': 'Enter your OpenAI API key. You can get one from platform.openai.com',\n            'hotkey_setting': 'Set your preferred keyboard shortcut for dictation',\n            'push_to_talk': 'When enabled, you must hold the hotkey while speaking'\n        }\n        \n        return tooltips.get(element_id, '')\n        \n    def show_help_window(self, topic_id=None):\n        # Implementation depends on UI framework choice\n        # This would open a window displaying the help content\n        pass\n```\n\nCreate a comprehensive user manual in Markdown format. Add video tutorials for common tasks and workflows.",
+        "testStrategy": "1. Verify all help topics are accessible and formatted correctly\n2. Test context-sensitive help in different application states\n3. Verify tooltips appear correctly for all settings\n4. Test help window navigation and search functionality\n5. Verify documentation accuracy with actual application behavior\n6. Test documentation rendering on different screen sizes\n7. Verify links to external resources work correctly",
+        "priority": "low",
+        "dependencies": [
+          1,
+          9,
+          10
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Implement Comprehensive Testing and Quality Assurance",
+        "description": "Develop and execute a comprehensive testing plan to ensure the application meets quality standards and performance requirements.",
+        "details": "Create a testing framework that:\n\n1. Implements automated unit tests\n   - Test individual components in isolation\n   - Use pytest for test automation\n   - Implement mock objects for external dependencies\n\n2. Develops integration tests\n   - Test component interactions\n   - Verify end-to-end workflows\n   - Test with different Windows versions and configurations\n\n3. Performs performance and stress testing\n   - Measure response times under various conditions\n   - Test with long dictation sessions\n   - Verify memory usage remains stable\n\nImplementation approach:\n```python\n# Example unit test for AudioCapture\n\nimport pytest\nimport numpy as np\nfrom unittest.mock import MagicMock, patch\nfrom src.audio.audio_capture import AudioCapture\n\nclass TestAudioCapture:\n    @patch('pyaudio.PyAudio')\n    def test_initialization(self, mock_pyaudio):\n        # Test that AudioCapture initializes correctly\n        audio_capture = AudioCapture()\n        assert audio_capture.sample_rate == 16000\n        assert audio_capture.channels == 1\n        assert audio_capture.chunk_size == 1024\n        mock_pyaudio.assert_called_once()\n    \n    @patch('pyaudio.PyAudio')\n    def test_context_manager(self, mock_pyaudio):\n        # Test that context manager works correctly\n        mock_stream = MagicMock()\n        mock_pyaudio.return_value.open.return_value = mock_stream\n        \n        with AudioCapture() as audio:\n            assert audio.stream is not None\n            \n        # Verify cleanup\n        mock_stream.stop_stream.assert_called_once()\n        mock_stream.close.assert_called_once()\n        mock_pyaudio.return_value.terminate.assert_called_once()\n    \n    @patch('pyaudio.PyAudio')\n    def test_recording(self, mock_pyaudio):\n        # Test recording functionality\n        mock_stream = MagicMock()\n        # Simulate audio data\n        mock_stream.read.return_value = np.random.bytes(2048)\n        mock_pyaudio.return_value.open.return_value = mock_stream\n        \n        audio_capture = AudioCapture()\n        audio_capture.stream = mock_stream\n        \n        # Start recording\n        audio_capture.start_recording()\n        # Record for a short time\n        import time\n        time.sleep(0.1)\n        # Stop recording\n        audio_data = audio_capture.stop_recording()\n        \n        # Verify we got some data\n        assert len(audio_data) > 0\n        # Verify stream was read at least once\n        assert mock_stream.read.call_count > 0\n\n# Example integration test\n\n@pytest.mark.integration\nclass TestDictationWorkflow:\n    @patch('src.recognition.speech_recognition.SpeechRecognition')\n    @patch('src.ai_processing.ai_text_processor.AITextProcessor')\n    @patch('src.text_insertion.text_insertion.TextInsertion')\n    def test_end_to_end_workflow(self, mock_text_insertion, mock_ai_processor, mock_speech_recognition):\n        # Mock the components\n        mock_speech_recognition.transcribe.return_value = \"This is a test dictation\"\n        mock_ai_processor.enhance_text.return_value = \"This is a test dictation.\"\n        mock_text_insertion.insert_text.return_value = True\n        \n        # Create application controller\n        from src.app_controller import ApplicationController\n        controller = ApplicationController()\n        controller.speech_recognition = mock_speech_recognition\n        controller.text_processor = mock_ai_processor\n        controller.text_insertion = mock_text_insertion\n        \n        # Simulate audio data\n        audio_data = b'dummy_audio_data'\n        \n        # Process the audio\n        controller._process_audio(audio_data)\n        \n        # Verify each component was called correctly\n        mock_speech_recognition.transcribe.assert_called_once_with(audio_data)\n        mock_ai_processor.enhance_text.assert_called_once()\n        mock_text_insertion.insert_text.assert_called_once_with(\"This is a test dictation.\")\n\n# Example performance test\n\n@pytest.mark.performance\nclass TestPerformance:\n    def test_response_time(self):\n        # Measure end-to-end response time\n        from src.app_controller import ApplicationController\n        controller = ApplicationController()\n        \n        # Initialize with test configuration\n        controller.initialize(test_mode=True)\n        \n        # Prepare test audio file\n        import os\n        test_audio_file = os.path.join('tests', 'resources', 'test_audio.wav')\n        \n        # Load audio data\n        with open(test_audio_file, 'rb') as f:\n            audio_data = f.read()\n        \n        # Measure processing time\n        import time\n        start_time = time.time()\n        controller._process_audio(audio_data)\n        end_time = time.time()\n        \n        # Verify response time is within requirements\n        response_time = end_time - start_time\n        assert response_time < 5.0, f\"Response time too slow: {response_time} seconds\"\n```\n\nImplement a continuous integration pipeline using GitHub Actions or similar. Add code coverage reporting to identify untested code paths.",
+        "testStrategy": "1. Run unit tests for all components\n2. Execute integration tests for key workflows\n3. Perform performance testing with various audio inputs\n4. Test on different Windows versions (10, 11)\n5. Verify memory usage remains stable during extended use\n6. Test error handling with simulated failures\n7. Measure code coverage and identify gaps\n8. Perform manual testing of user interface and experience",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-02T02:05:13.984Z",
+      "updated": "2025-08-02T05:02:20.776Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

@@ -1,0 +1,66 @@
+# Task ID: 6
+# Title: Implement Global Hotkey System
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Develop the hotkey management system that allows users to activate voice dictation from any application using customizable keyboard shortcuts.
+# Details:
+Create a HotkeyManager class that:
+
+1. Uses the global-hotkeys library to register system-wide keyboard shortcuts
+   - Default shortcut: Ctrl+Win+Space
+   - Support for push-to-talk mode (hold to record, release to process)
+   - Allow fully customizable key combinations
+
+2. Implement conflict resolution and error handling
+   - Detect and warn about conflicts with system or application shortcuts
+   - Provide fallback shortcuts if primary is unavailable
+
+3. Add visual and audio feedback for hotkey activation
+
+Implementation approach:
+```python
+class HotkeyManager:
+    def __init__(self, config):
+        self.hotkeys = {}
+        self.callbacks = {}
+        self.default_hotkey = config.get('hotkey', 'ctrl+win+space')
+        self.push_to_talk = config.get('push_to_talk', True)
+        
+    def register_hotkey(self, hotkey, callback, description):
+        try:
+            # Register with global-hotkeys library
+            key_id = register_hotkey(hotkey)
+            self.hotkeys[hotkey] = key_id
+            self.callbacks[key_id] = callback
+            return True
+        except Exception as e:
+            logging.error(f"Failed to register hotkey {hotkey}: {e}")
+            return False
+    
+    def start_listening(self):
+        # Start the hotkey listener thread
+        start_checking_hotkeys(self._hotkey_callback)
+        
+    def _hotkey_callback(self, key_id):
+        if key_id in self.callbacks:
+            self.callbacks[key_id]()
+            
+    def unregister_all(self):
+        # Clean up all registered hotkeys
+        for hotkey, key_id in self.hotkeys.items():
+            unregister_hotkey(key_id)
+        self.hotkeys = {}
+        self.callbacks = {}
+```
+
+Implement a system tray icon with visual feedback when recording is active. Add support for multiple hotkeys for different functions (start recording, cancel, undo, etc.).
+
+# Test Strategy:
+1. Test hotkey registration and activation across different Windows applications
+2. Verify push-to-talk mode works correctly
+3. Test customization of hotkeys through configuration
+4. Verify conflict detection and resolution
+5. Test visual and audio feedback mechanisms
+6. Measure response time from hotkey press to action
+7. Test cleanup and resource management when application exits

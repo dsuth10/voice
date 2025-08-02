@@ -1,0 +1,100 @@
+# Task ID: 2
+# Title: Implement Audio Capture Module
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Develop the audio capture module that handles microphone input, recording, and streaming for real-time processing.
+# Details:
+Create an AudioCapture class with the following features:
+- Use PyAudio to access the system's microphone
+- Support for 16kHz, 16-bit mono audio (optimal for speech recognition)
+- Implement both streaming and batch recording modes
+- Add noise filtering using scipy's signal processing functions
+- Include microphone selection for systems with multiple audio inputs
+- Implement audio level monitoring to detect silence/speech
+- Add a configurable audio buffer (default 3 seconds) for streaming
+
+Implementation should use Python's context managers for resource management:
+```python
+class AudioCapture:
+    def __init__(self, sample_rate=16000, channels=1, chunk_size=1024):
+        self.sample_rate = sample_rate
+        self.channels = channels
+        self.chunk_size = chunk_size
+        self.stream = None
+        self.pyaudio = pyaudio.PyAudio()
+        
+    def __enter__(self):
+        # Setup stream
+        self.stream = self.pyaudio.open(
+            format=pyaudio.paInt16,
+            channels=self.channels,
+            rate=self.sample_rate,
+            input=True,
+            frames_per_buffer=self.chunk_size
+        )
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # Clean up resources
+        if self.stream:
+            self.stream.stop_stream()
+            self.stream.close()
+        self.pyaudio.terminate()
+```
+
+Add methods for streaming and batch recording with proper error handling.
+
+# Test Strategy:
+Create unit tests that verify:
+1. Audio capture starts and stops correctly
+2. Recorded audio has the correct format and quality
+3. Streaming mode delivers chunks of expected size
+4. Error handling works when no microphone is available
+5. Noise filtering improves signal-to-noise ratio
+
+Use mock objects to simulate microphone input for consistent testing.
+
+# Subtasks:
+## 1. Design AudioCapture Class Interface [pending]
+### Dependencies: None
+### Description: Define the AudioCapture class structure, including initialization parameters, context manager support, and method signatures for streaming, batch recording, noise filtering, microphone selection, and audio level monitoring.
+### Details:
+Specify class attributes for sample rate, channels, chunk size, and buffer. Outline public methods for starting/stopping capture, selecting microphones, and retrieving audio data. Ensure compatibility with PyAudio and context manager protocols.
+
+## 2. Implement Microphone Selection and Initialization [pending]
+### Dependencies: 2.1
+### Description: Develop functionality to enumerate available microphones and allow selection by index or name, initializing the chosen device for audio capture.
+### Details:
+Use PyAudio to list all input devices and their properties. Implement logic to select and initialize the desired microphone, handling cases where the device is unavailable or invalid.
+
+## 3. Develop Streaming and Batch Recording Modes [pending]
+### Dependencies: 2.1, 2.2
+### Description: Implement methods for both real-time streaming and batch audio recording, supporting configurable buffer sizes and chunked data delivery.
+### Details:
+Use PyAudio's stream API to capture audio in both continuous (streaming) and fixed-duration (batch) modes. Ensure audio is captured at 16kHz, 16-bit mono, and buffered according to configuration.
+
+## 4. Integrate Noise Filtering Using Scipy [pending]
+### Dependencies: 2.3
+### Description: Add real-time noise filtering to captured audio using scipy's signal processing functions, ensuring minimal latency and improved signal quality.
+### Details:
+Apply digital filters (e.g., bandpass, noise reduction) to audio frames as they are captured. Allow filter parameters to be configurable. Ensure processing is efficient for real-time use.
+
+## 5. Add Audio Level Monitoring and Silence Detection [pending]
+### Dependencies: 2.3, 2.4
+### Description: Implement audio level monitoring to detect silence and speech, providing real-time feedback and enabling silence-based recording triggers.
+### Details:
+Calculate audio amplitude or RMS in real time. Define thresholds for silence and speech. Expose events or callbacks for silence detection. Integrate with streaming and batch modes.
+
+## 6. Implement Error Handling and Resource Management [pending]
+### Dependencies: 2.5
+### Description: Develop comprehensive error handling for audio capture failures, device issues, and resource cleanup, ensuring robust operation across different hardware configurations.
+### Details:
+Implement try-catch blocks for PyAudio operations, device initialization failures, and stream errors. Add proper resource cleanup in context manager __exit__ method. Handle cases where microphone becomes unavailable during recording. Include fallback mechanisms for common audio issues.
+
+## 7. Write Unit and Integration Tests with Mocks [pending]
+### Dependencies: 2.6
+### Description: Create comprehensive test suite for the AudioCapture module using mock objects to simulate microphone input and verify all functionality works correctly.
+### Details:
+Write unit tests for each method using unittest.mock to simulate PyAudio and audio devices. Create integration tests that verify the complete audio capture workflow. Test error conditions, resource management, and performance characteristics. Include tests for different audio formats and quality settings.
+

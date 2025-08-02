@@ -1,0 +1,63 @@
+# Task ID: 4
+# Title: Implement AI Text Enhancement Engine
+# Status: pending
+# Dependencies: 1, 3
+# Priority: high
+# Description: Create the AI text processing engine that uses OpenAI GPT to enhance transcribed text by correcting grammar, adding punctuation, and removing filler words.
+# Details:
+Develop an AITextProcessor class that:
+
+1. Integrates with OpenAI GPT-4o-mini API (primary) with fallback to GPT-3.5-turbo
+   - Use the latest model versions available (as of 2025)
+   - Implement efficient prompt engineering to minimize token usage
+
+2. Create specialized enhancement functions:
+   - Grammar correction
+   - Punctuation insertion
+   - Filler word removal (um, ah, like, etc.)
+   - Sentence structure improvement
+   - Proper noun capitalization
+
+3. Implement context-aware processing based on application type
+
+Sample implementation:
+```python
+class AITextProcessor:
+    def __init__(self, api_key, model="gpt-4o-mini"):
+        self.client = openai.OpenAI(api_key=api_key)
+        self.model = model
+        self.base_prompt = """Enhance the following transcribed text. Fix grammar, add appropriate punctuation, 
+        remove filler words (um, ah, like, etc.), and improve clarity while preserving the original meaning and tone."""
+    
+    def enhance_text(self, text, context=None, custom_instructions=None):
+        prompt = self.base_prompt
+        
+        if context:
+            prompt += f"\nThis text will be used in a {context} context."
+            
+        if custom_instructions:
+            prompt += f"\n{custom_instructions}"
+            
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": text}
+            ],
+            temperature=0.3,  # Lower temperature for more consistent results
+            max_tokens=1024
+        )
+        
+        return response.choices[0].message.content
+```
+
+Implement a template system for custom AI prompts that users can modify. Add caching to avoid re-processing identical text. Include token usage tracking to manage API costs.
+
+# Test Strategy:
+1. Unit tests with various text samples containing common speech patterns and errors
+2. Test enhancement quality with different types of text (formal, casual, technical)
+3. Measure improvement metrics (grammar errors fixed, filler words removed)
+4. Test context-awareness with different application types
+5. Verify custom instruction handling
+6. Test fallback mechanisms and error handling
+7. Benchmark performance and token usage
