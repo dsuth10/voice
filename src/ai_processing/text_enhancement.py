@@ -8,14 +8,17 @@ using OpenAI GPT models with grammar correction, punctuation, and filler word re
 import hashlib
 import json
 import logging
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Any
 from dataclasses import dataclass
 from datetime import datetime
 
 import openai
 from openai import OpenAI
 
-from ..utils.logger import get_logger
+try:
+    from ..utils.logger import get_logger
+except ImportError:
+    from utils.logger import get_logger
 from .prompt_templates import PromptTemplateManager
 from .cache_manager import CacheManager
 

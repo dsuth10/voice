@@ -14,19 +14,7 @@ from dataclasses import dataclass
 from enum import Enum
 from concurrent.futures import ThreadPoolExecutor, Future
 
-from .application_controller import ApplicationState, WorkflowMetrics
-
-
-class WorkflowStep(Enum):
-    """Workflow step enumeration."""
-    IDLE = "idle"
-    RECORDING = "recording"
-    TRANSCRIBING = "transcribing"
-    ENHANCING = "enhancing"
-    FORMATTING = "formatting"
-    INSERTING = "inserting"
-    COMPLETED = "completed"
-    ERROR = "error"
+from .types import WorkflowStep, WorkflowMetrics
 
 
 @dataclass

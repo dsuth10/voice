@@ -166,18 +166,25 @@ class SpeechRecognition:
     
     def _get_cache_key(self, audio_data: bytes, custom_vocabulary: Optional[List[str]] = None) -> str:
         """
-        Generate a cache key that includes both audio data and custom vocabulary.
+        Generate a cache key for audio data and custom vocabulary.
         
         Args:
             audio_data: Audio data as bytes
-            custom_vocabulary: Optional custom vocabulary terms
+            custom_vocabulary: Optional list of custom vocabulary terms
             
         Returns:
             Cache key string
         """
         # Include custom vocabulary in the hash for more accurate caching
         vocab_str = "|".join(sorted(custom_vocabulary or []))
-        combined_data = audio_data + vocab_str.encode('utf-8')
+        
+        # Handle numpy arrays by converting to bytes
+        if hasattr(audio_data, 'tobytes'):
+            audio_bytes = audio_data.tobytes()
+        else:
+            audio_bytes = audio_data
+            
+        combined_data = audio_bytes + vocab_str.encode('utf-8')
         return hashlib.md5(combined_data).hexdigest()
     
     def _get_audio_hash(self, audio_data: bytes) -> str:

@@ -8,7 +8,7 @@ It uses the global-hotkeys library to register and manage hotkeys across all Win
 import logging
 import threading
 from typing import Dict, Callable, Optional, List
-from global_hotkeys import register_hotkey, unregister_hotkey, start_checking_hotkeys, stop_checking_hotkeys
+import global_hotkeys
 from dataclasses import dataclass
 from enum import Enum
 
@@ -104,7 +104,7 @@ class HotkeyManager:
                 return False
             
             # Register with global-hotkeys library
-            key_id = register_hotkey(normalized_key)
+            key_id = global_hotkeys.register_hotkey(normalized_key)
             
             # Store the registration
             self.hotkeys[normalized_key] = key_id
@@ -168,7 +168,7 @@ class HotkeyManager:
                 return False
             
             key_id = self.hotkeys[normalized_key]
-            unregister_hotkey(key_id)
+            global_hotkeys.remove_hotkey(key_id)
             
             # Clean up references
             del self.hotkeys[normalized_key]
@@ -192,7 +192,7 @@ class HotkeyManager:
         
         try:
             self.listening = True
-            start_checking_hotkeys(self._hotkey_callback)
+            global_hotkeys.start_checking_hotkeys(self._hotkey_callback)
             self.logger.info("Started hotkey listener")
             
         except Exception as e:
@@ -205,7 +205,7 @@ class HotkeyManager:
             return
         
         try:
-            stop_checking_hotkeys()
+            global_hotkeys.stop_checking_hotkeys()
             self.listening = False
             self.logger.info("Stopped hotkey listener")
             

@@ -94,6 +94,10 @@ class AudioCapture:
         low_freq = 80 / nyquist
         high_freq = 8000 / nyquist
         
+        # Ensure frequencies are within valid range (0 < Wn < 1)
+        low_freq = max(0.001, min(0.999, low_freq))
+        high_freq = max(0.001, min(0.999, high_freq))
+        
         # Butterworth filter for smooth frequency response
         self.filter_coefficients = signal.butter(
             N=4,  # Filter order

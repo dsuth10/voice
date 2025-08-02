@@ -13,39 +13,20 @@ from dataclasses import dataclass
 from enum import Enum
 
 # Import all required components
-from .config import ConfigManager
-from .audio import AudioCapture
-from .recognition import SpeechRecognition
-from .ai_processing.text_enhancement import AITextProcessor
-from .text_insertion import TextInsertionSystem
-from .hotkeys.enhanced_hotkey_manager import EnhancedHotkeyManager
-from .context import ApplicationContext, ContextTextFormatter, AIEnhancementAdapter
-from .workflow_manager import WorkflowManager, WorkflowStep
+from ..config.config_manager import ConfigManager
+from ..audio.capture import AudioCapture
+from ..recognition.speech_recognition import SpeechRecognition
+from ..ai_processing.text_enhancement import AITextProcessor
+from ..text_insertion.text_insertion_system import TextInsertionSystem
+from ..hotkeys.hotkey_manager import HotkeyManager
+from ..context.application_context import ApplicationContext
+from ..context.text_formatter import ContextTextFormatter
+from ..context.ai_enhancement_adapter import AIEnhancementAdapter
+from .types import ApplicationState, WorkflowStep, WorkflowMetrics
+from .workflow_manager import WorkflowManager
 from .feedback_system import UserFeedbackSystem, FeedbackType, FeedbackLevel
 from .error_handler import ErrorHandler, ErrorNotifier
 from .performance_monitor import PerformanceMonitor, PerformanceReporter
-
-
-class ApplicationState(Enum):
-    """Application state enumeration."""
-    IDLE = "idle"
-    RECORDING = "recording"
-    PROCESSING = "processing"
-    ERROR = "error"
-    CONFIGURING = "configuring"
-
-
-@dataclass
-class WorkflowMetrics:
-    """Metrics for tracking workflow performance."""
-    recording_start_time: Optional[float] = None
-    recording_duration: Optional[float] = None
-    transcription_time: Optional[float] = None
-    enhancement_time: Optional[float] = None
-    insertion_time: Optional[float] = None
-    total_time: Optional[float] = None
-    error_count: int = 0
-    success_count: int = 0
 
 
 class ApplicationController:
@@ -298,7 +279,7 @@ class ApplicationController:
                 'undo_hotkey': self.config_manager.get('hotkey.undo', 'ctrl+win+z')
             }
             
-            self.hotkey_manager = EnhancedHotkeyManager(hotkey_config)
+            self.hotkey_manager = HotkeyManager(hotkey_config)
             
             # Register hotkey callbacks
             self.hotkey_manager.register_hotkey(

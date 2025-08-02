@@ -145,14 +145,14 @@ class ContextTextFormatter:
         if not value:
             return text
         
-        # Add greeting if not present
-        greetings = ['dear', 'hello', 'hi', 'good morning', 'good afternoon', 'good evening']
+        # Check if there's already a professional greeting
+        professional_greetings = ['dear']
         text_lower = text.lower()
         
-        has_greeting = any(greeting in text_lower for greeting in greetings)
+        has_professional_greeting = any(greeting in text_lower for greeting in professional_greetings)
         
-        if not has_greeting:
-            # Simple greeting addition (in practice, this would be more sophisticated)
+        if not has_professional_greeting:
+            # Add professional greeting (in practice, this would be more sophisticated)
             return f"Dear [Recipient],\n\n{text}"
         
         return text
@@ -324,7 +324,7 @@ class ContextTextFormatter:
         """Apply capitalization formatting."""
         if style == 'sentence':
             # Sentence case: First letter of each sentence capitalized
-            sentences = re.split(r'([.!?]+)', text)
+            sentences = re.split(r'([.!?]+\s*)', text)
             formatted_sentences = []
             
             for i, part in enumerate(sentences):
@@ -332,8 +332,16 @@ class ContextTextFormatter:
                     if part.strip():
                         part = part.strip()
                         if part:
-                            part = part[0].upper() + part[1:].lower()
-                    formatted_sentences.append(part)
+                            # Handle greetings and other special cases
+                            if part.lower().startswith('dear '):
+                                # Keep "Dear" capitalized and don't modify the greeting
+                                formatted_sentences.append(part)
+                            else:
+                                # Only capitalize the first letter, preserve the rest
+                                part = part[0].upper() + part[1:]
+                                formatted_sentences.append(part)
+                    else:
+                        formatted_sentences.append(part)
                 else:  # Punctuation part
                     formatted_sentences.append(part)
             

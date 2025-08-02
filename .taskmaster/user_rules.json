@@ -3,7 +3,7 @@
     "test_app": {
       "context_type": "document",
       "priority": 1,
-      "created": "2025-08-02T17:38:21.529576"
+      "created": "2025-08-02T19:12:09.849956"
     }
   },
   "formatting_templates": {
@@ -11,8 +11,8 @@
       "template": {
         "formal": true
       },
-      "created": "2025-08-02T17:38:21.529576",
-      "updated": "2025-08-02T17:38:21.529576"
+      "created": "2025-08-02T19:12:09.849956",
+      "updated": "2025-08-02T19:12:09.849956"
     }
   },
   "learning_data": {

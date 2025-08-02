@@ -142,8 +142,8 @@ class TestAIEnhancementAdapter(unittest.TestCase):
         
         # Should apply basic grammar corrections
         self.assertIn("going to", enhanced)  # "gonna" should be converted
-        # Note: "its" is not converted to "it's" in this context because it's not followed by a space
-        self.assertEqual(enhanced, "its going to be great")
+        self.assertIn("It's", enhanced)  # "its" should be converted to "It's"
+        self.assertEqual(enhanced, "It's going to be great")
     
     def test_empty_text_handling(self):
         """Test handling of empty text."""

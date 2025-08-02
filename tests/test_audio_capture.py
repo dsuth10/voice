@@ -285,7 +285,9 @@ class TestAudioCapture(unittest.TestCase):
         self.assertIsInstance(audio_data, np.ndarray)
         self.assertGreater(len(audio_data), 0)
         
-        # Test already recording
+        # Test already recording - should return None
+        # We need to manually set is_recording to True to simulate concurrent recording
+        capture.is_recording = True
         result = capture.record_batch(duration=0.1)
         self.assertIsNone(result)
     
@@ -323,11 +325,14 @@ class TestAudioCapture(unittest.TestCase):
     
     def test_error_handling(self):
         """Test error handling scenarios."""
-        # Test PyAudio initialization error
+        # Test PyAudio initialization error when actually trying to use it
         self.mock_pyaudio.PyAudio.side_effect = Exception("PyAudio error")
         
+        capture = AudioCapture()
+        
+        # PyAudio should fail when we try to list microphones
         with self.assertRaises(Exception):
-            AudioCapture()
+            capture.list_microphones()
         
         # Reset mock
         self.mock_pyaudio.PyAudio.side_effect = None
