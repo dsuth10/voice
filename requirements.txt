@@ -1,6 +1,6 @@
 # Voice Dictation Assistant Dependencies
 # Core audio and speech recognition
-# pyaudio==0.2.13  # Temporarily removed due to Python 3.12 compatibility issues
+pyaudio>=0.2.14  # Updated for Python 3.12 compatibility
 assemblyai==0.17.0
 
 # AI text processing
@@ -17,6 +17,7 @@ global-hotkeys==0.1.7
 
 # Configuration and utilities
 pyyaml==6.0.1
+pydantic==2.5.0
 
 # Testing framework
 pytest==7.4.0
