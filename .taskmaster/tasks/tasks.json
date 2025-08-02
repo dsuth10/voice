@@ -50,7 +50,7 @@
               "1.3"
             ],
             "details": "Write the provided dependency list to requirements.txt. Use pip to install all dependencies within the activated virtual environment. Address any installation errors or compatibility issues.",
-            "status": "in-progress",
+            "status": "done",
             "testStrategy": "Run a test script that imports each dependency to confirm successful installation. Check that requirements.txt accurately reflects all installed packages."
           },
           {
@@ -61,7 +61,7 @@
               "1.4"
             ],
             "details": "Create a logging configuration in src/utils/ that sets up rotating file handlers and appropriate log formatting. Write a test script to generate log entries and confirm log rotation and file output.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": "Run the test script to ensure logs are written, rotated as expected, and can be read back. Confirm that logging works across different modules in the project."
           }
         ]
@@ -437,7 +437,7 @@
     ],
     "metadata": {
       "created": "2025-08-02T02:05:13.984Z",
-      "updated": "2025-08-02T05:09:47.274Z",
+      "updated": "2025-08-02T05:14:15.696Z",
       "description": "Tasks for master context"
     }
   }
