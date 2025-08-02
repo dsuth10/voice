@@ -1,0 +1,31 @@
+# Voice Dictation Assistant Dependencies
+# Core audio and speech recognition
+pyaudio>=0.2.14  # Updated for Python 3.12 compatibility
+assemblyai==0.17.0
+
+# AI text processing
+openai==1.5.0
+
+# Windows integration and automation
+pywin32==306
+pyautogui==0.9.54
+pygetwindow==0.0.9
+pyperclip==1.8.2
+
+# Hotkey management
+global-hotkeys==0.1.7
+
+# Configuration and utilities
+pyyaml==6.0.1
+pydantic==2.5.0
+
+# Testing framework
+pytest==7.4.0
+
+# Additional dependencies for enhanced functionality
+scipy>=1.11.0
+numpy>=1.24.0
+requests>=2.31.0
+
+# Note: PyAudio installation may require manual setup on Windows with Python 3.12
+# Alternative: Use sounddevice or pyaudio-wheels for audio capture 

@@ -1,0 +1,129 @@
+# Task ID: 14
+# Title: Create User Documentation and Help System
+# Status: pending
+# Dependencies: 1, 9, 10
+# Priority: low
+# Description: Develop comprehensive user documentation and an in-application help system to assist users in getting the most out of the application.
+# Details:
+Implement a documentation system that:
+
+1. Creates user-friendly documentation
+   - Quick start guide
+   - Feature overview
+   - Troubleshooting section
+   - FAQ
+
+2. Develops an in-application help system
+   - Context-sensitive help
+   - Tooltips for settings
+   - Keyboard shortcut reference
+
+3. Provides usage examples and best practices
+
+Implementation approach:
+```python
+class HelpSystem:
+    def __init__(self, config_manager):
+        self.config_manager = config_manager
+        self.help_topics = self._load_help_topics()
+        
+    def _load_help_topics(self):
+        # Load help topics from embedded resources or external files
+        topics = {
+            'getting_started': {
+                'title': 'Getting Started',
+                'content': '''
+                # Getting Started with Voice Dictation Assistant
+                
+                ## Quick Setup
+                1. Press Ctrl+Win+Space to start dictation
+                2. Speak clearly into your microphone
+                3. Release the keys to process and insert text
+                
+                ## First-Time Setup
+                - Enter your API keys in the settings
+                - Customize keyboard shortcuts if desired
+                - Test with a short phrase to verify everything works
+                '''
+            },
+            'keyboard_shortcuts': {
+                'title': 'Keyboard Shortcuts',
+                'content': '''
+                # Keyboard Shortcuts
+                
+                - **Ctrl+Win+Space**: Start/stop dictation (default, customizable)
+                - **Ctrl+Win+Z**: Undo last dictation
+                - **Ctrl+Win+S**: Open settings
+                - **Ctrl+Win+H**: Show help
+                '''
+            },
+            'troubleshooting': {
+                'title': 'Troubleshooting',
+                'content': '''
+                # Troubleshooting
+                
+                ## Common Issues
+                
+                ### Dictation Not Working
+                - Check that your microphone is connected and working
+                - Verify API keys are entered correctly
+                - Ensure you have an active internet connection
+                
+                ### Text Not Inserting
+                - Some applications with enhanced security may block text insertion
+                - Try using clipboard insertion method in settings
+                
+                ### Poor Transcription Quality
+                - Speak clearly and at a moderate pace
+                - Reduce background noise
+                - Use a better quality microphone if available
+                '''
+            }
+        }
+        
+        return topics
+        
+    def get_help_topic(self, topic_id):
+        return self.help_topics.get(topic_id, {
+            'title': 'Topic Not Found',
+            'content': 'The requested help topic was not found.'
+        })
+        
+    def get_context_help(self, context):
+        # Return context-specific help based on application state
+        context_help = {
+            'recording': 'Speak clearly into your microphone. Release the keys when finished.',
+            'processing': 'Your dictation is being processed. Please wait a moment.',
+            'error': 'An error occurred. Check the troubleshooting section for help.',
+            'settings': 'Configure your API keys, hotkeys, and preferences here.'
+        }
+        
+        return context_help.get(context, 'Press Ctrl+Win+Space to start dictation.')
+        
+    def get_tooltip(self, element_id):
+        # Return tooltips for UI elements
+        tooltips = {
+            'assemblyai_key': 'Enter your AssemblyAI API key. You can get one from assemblyai.com',
+            'openai_key': 'Enter your OpenAI API key. You can get one from platform.openai.com',
+            'hotkey_setting': 'Set your preferred keyboard shortcut for dictation',
+            'push_to_talk': 'When enabled, you must hold the hotkey while speaking'
+        }
+        
+        return tooltips.get(element_id, '')
+        
+    def show_help_window(self, topic_id=None):
+        # Implementation depends on UI framework choice
+        # This would open a window displaying the help content
+        pass
+```
+
+Create a comprehensive user manual in Markdown format. Add video tutorials for common tasks and workflows.
+
+# Test Strategy:
+1. Verify all help topics are accessible and formatted correctly
+2. Test context-sensitive help in different application states
+3. Verify tooltips appear correctly for all settings
+4. Test help window navigation and search functionality
+5. Verify documentation accuracy with actual application behavior
+6. Test documentation rendering on different screen sizes
+7. Verify links to external resources work correctly

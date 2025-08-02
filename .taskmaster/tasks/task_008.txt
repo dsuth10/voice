@@ -1,0 +1,103 @@
+# Task ID: 8
+# Title: Implement Application Context Awareness
+# Status: pending
+# Dependencies: 1, 4, 5
+# Priority: medium
+# Description: Develop the system that detects the active application and adapts text formatting and behavior based on the application context.
+# Details:
+Create an ApplicationContext class that:
+
+1. Detects the active application using pygetwindow
+   - Identify common applications (Word, Outlook, browsers, code editors)
+   - Determine application type based on window class and title
+
+2. Provides context-specific formatting rules
+   - Email formatting for Outlook/Gmail
+   - Document formatting for Word/Google Docs
+   - Code comment formatting for IDEs
+
+3. Adapts AI enhancement based on context
+
+Implementation approach:
+```python
+class ApplicationContext:
+    def __init__(self):
+        # Define known application patterns
+        self.app_patterns = {
+            'email': ['outlook', 'thunderbird', 'gmail', 'mail'],
+            'document': ['word', 'writer', 'docs', 'pages'],
+            'code': ['code', 'visual studio', 'intellij', 'pycharm', 'eclipse'],
+            'browser': ['chrome', 'firefox', 'edge', 'safari'],
+            'chat': ['teams', 'slack', 'discord', 'whatsapp']
+        }
+        
+        # Define context-specific formatting templates
+        self.formatting_templates = {
+            'email': {
+                'formal': True,
+                'paragraphs': True,
+                'greeting': True,
+                'signature': False
+            },
+            'document': {
+                'formal': True,
+                'paragraphs': True,
+                'academic': False
+            },
+            'code': {
+                'comment_style': True,
+                'technical': True,
+                'concise': True
+            },
+            'chat': {
+                'formal': False,
+                'concise': True,
+                'conversational': True
+            }
+        }
+    
+    def detect_context(self):
+        # Get active window information
+        active_window = pygetwindow.getActiveWindow()
+        if not active_window:
+            return 'unknown'
+            
+        window_title = active_window.title.lower()
+        
+        # Determine application type based on window title
+        for context_type, patterns in self.app_patterns.items():
+            if any(pattern in window_title for pattern in patterns):
+                return context_type
+                
+        return 'general'
+    
+    def get_formatting_template(self, context_type=None):
+        if not context_type:
+            context_type = self.detect_context()
+            
+        return self.formatting_templates.get(context_type, self.formatting_templates.get('general', {}))
+    
+    def get_ai_prompt_for_context(self, context_type=None):
+        if not context_type:
+            context_type = self.detect_context()
+            
+        prompts = {
+            'email': "Format this as a professional email. Use proper email etiquette.",
+            'document': "Format this as a well-structured document paragraph.",
+            'code': "Format this as a clear code comment, using technical language appropriately.",
+            'chat': "Format this as a conversational message, keeping it natural but clear."
+        }
+        
+        return prompts.get(context_type, "")
+```
+
+Implement user-defined context rules and templates. Add learning capability to improve context detection over time based on user corrections.
+
+# Test Strategy:
+1. Test application detection with various Windows applications
+2. Verify context-specific formatting is applied correctly
+3. Test with different window titles and states
+4. Measure detection accuracy for common applications
+5. Test custom context rules and templates
+6. Verify AI prompt adaptation based on context
+7. Test learning capability with simulated user corrections

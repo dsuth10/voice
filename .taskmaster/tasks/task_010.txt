@@ -1,0 +1,109 @@
+# Task ID: 10
+# Title: Implement System Tray Application
+# Status: pending
+# Dependencies: 1, 9
+# Priority: medium
+# Description: Create a system tray application with visual feedback, status indicators, and quick access to settings.
+# Details:
+Develop a SystemTrayApp class that:
+
+1. Creates a Windows system tray icon
+   - Use pystray library for system tray integration
+   - Show application status (idle, recording, processing)
+   - Provide quick access to common functions
+
+2. Implements visual feedback for dictation states
+   - Recording indicator (red icon)
+   - Processing indicator (yellow icon)
+   - Ready indicator (green icon)
+   - Error indicator (exclamation mark)
+
+3. Provides a settings menu and about dialog
+
+Implementation approach:
+```python
+class SystemTrayApp:
+    def __init__(self, app_controller):
+        self.app_controller = app_controller
+        self.icon = None
+        self.current_state = 'idle'
+        
+        # Load icon images
+        self.icons = {
+            'idle': Image.open('resources/icon_idle.png'),
+            'recording': Image.open('resources/icon_recording.png'),
+            'processing': Image.open('resources/icon_processing.png'),
+            'error': Image.open('resources/icon_error.png')
+        }
+        
+    def setup(self):
+        # Create system tray menu
+        menu = (
+            pystray.MenuItem('Status: Idle', self._status_item, enabled=False),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem('Start Dictation', self._toggle_dictation),
+            pystray.MenuItem('Settings', self._open_settings),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem('About', self._show_about),
+            pystray.MenuItem('Exit', self._exit_app)
+        )
+        
+        # Create system tray icon
+        self.icon = pystray.Icon(
+            'VoiceDictationAssistant',
+            self.icons['idle'],
+            'Voice Dictation Assistant',
+            menu
+        )
+        
+    def run(self):
+        # Start the system tray icon
+        self.icon.run()
+        
+    def update_state(self, state):
+        if state not in self.icons:
+            state = 'idle'
+            
+        self.current_state = state
+        self.icon.icon = self.icons[state]
+        
+        # Update status menu item
+        status_text = f'Status: {state.capitalize()}'
+        self.icon.menu = self.icon.menu.update_item('Status: Idle', pystray.MenuItem(status_text, self._status_item, enabled=False))
+        
+    def show_notification(self, title, message):
+        self.icon.notify(message, title)
+        
+    def _status_item(self):
+        # Dummy function for status display
+        pass
+        
+    def _toggle_dictation(self):
+        self.app_controller._toggle_recording()
+        
+    def _open_settings(self):
+        # Open settings dialog
+        # Implementation depends on UI framework choice
+        pass
+        
+    def _show_about(self):
+        # Show about dialog
+        # Implementation depends on UI framework choice
+        pass
+        
+    def _exit_app(self):
+        # Clean up and exit
+        self.app_controller.shutdown()
+        self.icon.stop()
+```
+
+Implement a simple settings dialog using tkinter or PyQt for configuration. Add keyboard shortcut hints in the menu.
+
+# Test Strategy:
+1. Test system tray icon creation and visibility
+2. Verify menu functionality and state updates
+3. Test visual feedback for different application states
+4. Verify notification display
+5. Test settings dialog functionality
+6. Measure resource usage of the system tray application
+7. Test application exit and cleanup

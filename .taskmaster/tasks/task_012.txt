@@ -1,0 +1,160 @@
+# Task ID: 12
+# Title: Implement Performance Monitoring and Analytics
+# Status: pending
+# Dependencies: 1, 9, 11
+# Priority: low
+# Description: Create a system to monitor application performance, track usage patterns, and collect anonymous analytics to improve the user experience.
+# Details:
+Develop a PerformanceMonitor class that:
+
+1. Tracks key performance metrics
+   - Response time (from hotkey to text insertion)
+   - Transcription accuracy (estimated)
+   - API latency
+   - Resource usage (CPU, memory)
+
+2. Collects anonymous usage statistics (opt-in)
+   - Feature usage frequency
+   - Error rates
+   - Common application contexts
+   - Session duration
+
+3. Provides performance insights and recommendations
+
+Implementation approach:
+```python
+class PerformanceMonitor:
+    def __init__(self, config_manager):
+        self.config_manager = config_manager
+        self.metrics = {}
+        self.session_start = time.time()
+        self.analytics_enabled = config_manager.get('analytics.enabled', False)
+        
+        # Initialize metrics storage
+        self._reset_metrics()
+        
+    def _reset_metrics(self):
+        self.metrics = {
+            'dictation_count': 0,
+            'total_audio_duration': 0,
+            'total_response_time': 0,
+            'api_calls': {
+                'assemblyai': 0,
+                'openai': 0
+            },
+            'errors': {
+                'network': 0,
+                'api': 0,
+                'audio': 0,
+                'general': 0
+            },
+            'contexts': {},
+            'session_duration': 0
+        }
+        
+    def start_operation(self, operation_name):
+        # Start timing an operation
+        return {
+            'name': operation_name,
+            'start_time': time.time()
+        }
+        
+    def end_operation(self, operation):
+        # End timing an operation and record metrics
+        duration = time.time() - operation['start_time']
+        
+        # Store in appropriate metric
+        if operation['name'] == 'dictation':
+            self.metrics['dictation_count'] += 1
+            self.metrics['total_response_time'] += duration
+            
+        elif operation['name'].startswith('api_'):
+            api_name = operation['name'].split('_')[1]
+            if api_name in self.metrics['api_calls']:
+                self.metrics['api_calls'][api_name] += 1
+                
+        return duration
+        
+    def record_audio_duration(self, duration):
+        self.metrics['total_audio_duration'] += duration
+        
+    def record_error(self, error_type):
+        if error_type in self.metrics['errors']:
+            self.metrics['errors'][error_type] += 1
+            
+    def record_context(self, context):
+        if context not in self.metrics['contexts']:
+            self.metrics['contexts'][context] = 0
+            
+        self.metrics['contexts'][context] += 1
+        
+    def get_average_response_time(self):
+        if self.metrics['dictation_count'] == 0:
+            return 0
+            
+        return self.metrics['total_response_time'] / self.metrics['dictation_count']
+        
+    def get_session_duration(self):
+        return time.time() - self.session_start
+        
+    def get_performance_summary(self):
+        avg_response_time = self.get_average_response_time()
+        session_duration = self.get_session_duration()
+        
+        return {
+            'dictation_count': self.metrics['dictation_count'],
+            'average_response_time': avg_response_time,
+            'session_duration': session_duration,
+            'error_rate': sum(self.metrics['errors'].values()) / max(1, self.metrics['dictation_count']),
+            'most_used_context': max(self.metrics['contexts'].items(), key=lambda x: x[1])[0] if self.metrics['contexts'] else None
+        }
+        
+    def get_performance_recommendations(self):
+        recommendations = []
+        avg_response_time = self.get_average_response_time()
+        
+        # Response time recommendations
+        if avg_response_time > 5.0:
+            recommendations.append("Response time is higher than optimal. Consider using a faster internet connection or adjusting audio quality settings.")
+            
+        # Error rate recommendations
+        error_rate = sum(self.metrics['errors'].values()) / max(1, self.metrics['dictation_count'])
+        if error_rate > 0.1:  # More than 10% error rate
+            recommendations.append("Error rate is high. Check the logs for common errors and verify API keys and microphone settings.")
+            
+        return recommendations
+        
+    def save_metrics(self):
+        # Only save if analytics are enabled
+        if not self.analytics_enabled:
+            return
+            
+        # Update session duration
+        self.metrics['session_duration'] = self.get_session_duration()
+        
+        # Save to local storage
+        metrics_dir = os.path.join(
+            os.environ.get('APPDATA'),
+            'VoiceDictationAssistant',
+            'metrics'
+        )
+        os.makedirs(metrics_dir, exist_ok=True)
+        
+        # Use timestamp as filename
+        filename = f"metrics_{int(time.time())}.json"
+        filepath = os.path.join(metrics_dir, filename)
+        
+        with open(filepath, 'w') as f:
+            json.dump(self.metrics, f)
+```
+
+Implement a system to periodically upload anonymous analytics (with explicit user consent). Add a dashboard in the settings to show performance metrics.
+
+# Test Strategy:
+1. Test metric collection for various operations
+2. Verify timing accuracy for response time measurements
+3. Test analytics storage and retrieval
+4. Verify recommendations are appropriate based on metrics
+5. Test opt-in/opt-out functionality for analytics
+6. Measure the performance impact of the monitoring system itself
+7. Test with simulated high load to verify metric accuracy

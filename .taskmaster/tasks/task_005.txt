@@ -1,0 +1,73 @@
+# Task ID: 5
+# Title: Develop Text Insertion System
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Create the text insertion module that detects cursor position and inserts enhanced text into any Windows application.
+# Details:
+Implement a TextInsertion class that:
+
+1. Uses pywin32 and pyautogui to detect cursor position and insert text
+   - Support for all major Windows applications (Office, browsers, text editors)
+   - Handle different text input methods (direct typing, clipboard paste)
+
+2. Implement application-specific formatting
+   - Detect active application using pygetwindow
+   - Apply appropriate formatting based on application context
+
+3. Add undo support and error recovery
+
+Implementation approach:
+```python
+class TextInsertion:
+    def __init__(self):
+        self.last_insertion = None
+        self.clipboard_backup = None
+    
+    def get_active_application(self):
+        # Use pygetwindow to detect active window
+        active_window = pygetwindow.getActiveWindow()
+        return active_window.title if active_window else None
+    
+    def insert_text(self, text, use_clipboard=True):
+        # Backup current clipboard content
+        self.clipboard_backup = pyperclip.paste()
+        self.last_insertion = text
+        
+        try:
+            if use_clipboard:
+                # Use clipboard method (more reliable)
+                pyperclip.copy(text)
+                pyautogui.hotkey('ctrl', 'v')
+            else:
+                # Direct typing method (slower but works in some secure apps)
+                pyautogui.write(text)
+                
+            return True
+        except Exception as e:
+            logging.error(f"Text insertion failed: {e}")
+            return False
+        finally:
+            # Restore original clipboard content
+            if self.clipboard_backup is not None:
+                pyperclip.copy(self.clipboard_backup)
+    
+    def undo_insertion(self):
+        if self.last_insertion:
+            # Calculate number of characters to delete
+            chars_to_delete = len(self.last_insertion)
+            # Send backspace key that many times
+            for _ in range(chars_to_delete):
+                pyautogui.press('backspace')
+```
+
+Implement special handling for different application types (Word, Outlook, VS Code, etc.) with format preservation. Add a fallback mechanism for applications with unusual text input methods.
+
+# Test Strategy:
+1. Test insertion in various Windows applications (Word, Notepad, browsers, etc.)
+2. Verify cursor position detection accuracy
+3. Test undo functionality
+4. Measure insertion speed and reliability
+5. Test error handling when insertion fails
+6. Verify clipboard content is properly restored after insertion
+7. Test with different text lengths and special characters

@@ -1,0 +1,150 @@
+---
+description: Ensure PowerShell syntax is used first when running commands on Windows, with fallback options
+globs: **/*.py, **/*.js, **/*.ts, **/*.md, **/*.sh, **/*.ps1
+alwaysApply: true
+---
+
+# PowerShell Command Syntax Priority
+
+When running commands in this Windows environment, always prioritize PowerShell syntax first, then provide fallback options if needed.
+
+## **Primary Command Strategy**
+
+- **Use PowerShell syntax first** for all command execution
+- **Provide Unix/Linux alternatives** as fallback options when PowerShell syntax fails
+- **Include both options** in command suggestions to ensure compatibility
+
+## **PowerShell Command Patterns**
+
+### **File Operations**
+```powershell
+# ✅ DO: Use PowerShell file operations
+Get-ChildItem -Path "src" -Recurse
+Copy-Item "source.txt" "destination.txt"
+Remove-Item "file.txt" -Force
+New-Item -ItemType Directory -Path "new-folder"
+
+# ❌ DON'T: Use Unix commands without PowerShell equivalents
+ls src/
+cp source.txt destination.txt
+rm file.txt
+mkdir new-folder
+```
+
+### **Process Management**
+```powershell
+# ✅ DO: Use PowerShell process commands
+Get-Process | Where-Object {$_.ProcessName -like "*node*"}
+Stop-Process -Name "process-name" -Force
+Start-Process "notepad.exe"
+
+# ❌ DON'T: Use Unix process commands
+ps aux | grep node
+kill process-name
+notepad.exe
+```
+
+### **Environment and Path**
+```powershell
+# ✅ DO: Use PowerShell environment syntax
+$env:PATH
+$env:NODE_ENV = "development"
+Set-Location "C:\project\src"
+
+# ❌ DON'T: Use Unix environment syntax
+echo $PATH
+export NODE_ENV=development
+cd /c/project/src
+```
+
+## **Fallback Strategy**
+
+When PowerShell syntax doesn't work or isn't available:
+
+1. **Try PowerShell first** with proper syntax
+2. **Provide Unix/Linux alternatives** as comments or secondary options
+3. **Use cross-platform tools** when possible (npm, git, etc.)
+4. **Document the difference** between PowerShell and Unix approaches
+
+## **Command Execution Examples**
+
+### **Package Management**
+```powershell
+# Primary: PowerShell with npm
+npm install package-name
+
+# Fallback: If npm not available
+# Install-NodeJS (PowerShell)
+# curl -sL https://deb.nodesource.com/setup_lts.x | sudo -E bash - (Unix)
+```
+
+### **Git Operations**
+```powershell
+# Primary: Git commands work cross-platform
+git status
+git add .
+git commit -m "message"
+
+# Fallback: PowerShell-specific git
+# git.exe status
+# git.exe add .
+# git.exe commit -m "message"
+```
+
+### **File System Navigation**
+```powershell
+# Primary: PowerShell navigation
+Get-ChildItem
+Set-Location "path"
+Get-Location
+
+# Fallback: Unix commands
+# ls
+# cd path
+# pwd
+```
+
+## **Error Handling**
+
+When commands fail:
+
+1. **Check PowerShell syntax** first
+2. **Verify command availability** in PowerShell
+3. **Provide Unix alternative** if PowerShell doesn't support the command
+4. **Use cross-platform tools** when possible
+5. **Document the working solution** for future reference
+
+## **Best Practices**
+
+- **Always test PowerShell syntax** before suggesting Unix alternatives
+- **Use PowerShell aliases** when appropriate (ls, cd, pwd work in PowerShell)
+- **Provide both options** in documentation and examples
+- **Prefer cross-platform tools** (npm, git, python) over platform-specific commands
+- **Document PowerShell-specific features** when they provide advantages
+
+## **Common PowerShell Commands**
+
+```powershell
+# File operations
+Get-ChildItem (ls)
+Copy-Item (cp)
+Remove-Item (rm)
+New-Item (mkdir/touch)
+
+# Process management
+Get-Process (ps)
+Stop-Process (kill)
+Start-Process
+
+# Environment
+$env:VARIABLE_NAME
+Set-Item Env:VARIABLE_NAME "value"
+
+# Navigation
+Set-Location (cd)
+Get-Location (pwd)
+Push-Location (pushd)
+Pop-Location (popd)
+```
+
+This rule ensures that all command suggestions prioritize PowerShell syntax while maintaining compatibility with Unix/Linux alternatives when needed.

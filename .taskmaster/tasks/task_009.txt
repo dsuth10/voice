@@ -1,0 +1,189 @@
+# Task ID: 9
+# Title: Develop Core Application Controller
+# Status: pending
+# Dependencies: 2, 3, 4, 5, 6, 7, 8
+# Priority: high
+# Description: Create the main application controller that coordinates all components and implements the core dictation workflow.
+# Details:
+Implement an ApplicationController class that:
+
+1. Coordinates all system components
+   - Audio capture
+   - Speech recognition
+   - AI text enhancement
+   - Text insertion
+   - Hotkey management
+
+2. Implements the main dictation workflow
+   - Start recording on hotkey press
+   - Process audio through speech recognition
+   - Enhance text with AI
+   - Insert text at cursor position
+   - Provide feedback to user
+
+3. Handles error conditions and recovery
+
+Implementation approach:
+```python
+class ApplicationController:
+    def __init__(self, config_file=None):
+        # Initialize configuration
+        self.config_manager = ConfigManager(config_file)
+        
+        # Initialize components
+        self.hotkey_manager = HotkeyManager(self.config_manager)
+        self.audio_capture = None  # Initialized on demand
+        self.speech_recognition = None  # Initialized on demand
+        self.text_processor = None  # Initialized on demand
+        self.text_insertion = TextInsertion()
+        self.app_context = ApplicationContext()
+        
+        # State variables
+        self.is_recording = False
+        self.is_processing = False
+        self.last_error = None
+        
+    def initialize(self):
+        # Initialize API-dependent components
+        assemblyai_key = self.config_manager.decrypt_api_key('assemblyai')
+        openai_key = self.config_manager.decrypt_api_key('openai')
+        
+        if not assemblyai_key or not openai_key:
+            # Show configuration wizard if keys are missing
+            self._show_config_wizard()
+            assemblyai_key = self.config_manager.decrypt_api_key('assemblyai')
+            openai_key = self.config_manager.decrypt_api_key('openai')
+        
+        self.speech_recognition = SpeechRecognition(api_key=assemblyai_key)
+        self.text_processor = AITextProcessor(api_key=openai_key)
+        
+        # Register hotkeys
+        self.hotkey_manager.register_hotkey(
+            self.config_manager.get('hotkey', 'ctrl+win+space'),
+            self._toggle_recording,
+            "Toggle recording"
+        )
+        
+        # Start hotkey listener
+        self.hotkey_manager.start_listening()
+        
+    def _toggle_recording(self):
+        if self.is_recording:
+            self._stop_recording()
+        else:
+            self._start_recording()
+    
+    def _start_recording(self):
+        if self.is_recording or self.is_processing:
+            return
+            
+        try:
+            # Show visual feedback
+            self._show_recording_indicator(True)
+            
+            # Initialize audio capture
+            self.audio_capture = AudioCapture(
+                sample_rate=self.config_manager.get('audio.sample_rate', 16000),
+                channels=self.config_manager.get('audio.channels', 1),
+                chunk_size=self.config_manager.get('audio.chunk_size', 1024)
+            )
+            
+            # Start recording
+            self.audio_capture.start_recording()
+            self.is_recording = True
+            
+        except Exception as e:
+            self.last_error = str(e)
+            logging.error(f"Failed to start recording: {e}")
+            self._show_error_notification("Failed to start recording")
+    
+    def _stop_recording(self):
+        if not self.is_recording:
+            return
+            
+        try:
+            # Stop recording
+            audio_data = self.audio_capture.stop_recording()
+            self.is_recording = False
+            self._show_recording_indicator(False)
+            
+            # Process the recording
+            self.is_processing = True
+            self._show_processing_indicator(True)
+            
+            # Run processing in a separate thread to keep UI responsive
+            threading.Thread(target=self._process_audio, args=(audio_data,)).start()
+            
+        except Exception as e:
+            self.last_error = str(e)
+            logging.error(f"Failed to stop recording: {e}")
+            self._show_error_notification("Failed to stop recording")
+            self.is_recording = False
+            self.is_processing = False
+    
+    def _process_audio(self, audio_data):
+        try:
+            # Transcribe audio
+            transcription = self.speech_recognition.transcribe(audio_data)
+            
+            if not transcription:
+                raise Exception("Transcription failed or returned empty result")
+                
+            # Detect application context
+            context = self.app_context.detect_context()
+            context_prompt = self.app_context.get_ai_prompt_for_context(context)
+            
+            # Enhance text with AI
+            enhanced_text = self.text_processor.enhance_text(
+                transcription,
+                context=context,
+                custom_instructions=context_prompt
+            )
+            
+            # Insert text at cursor position
+            self.text_insertion.insert_text(enhanced_text)
+            
+        except Exception as e:
+            self.last_error = str(e)
+            logging.error(f"Processing failed: {e}")
+            self._show_error_notification("Processing failed")
+            
+        finally:
+            self.is_processing = False
+            self._show_processing_indicator(False)
+    
+    def _show_recording_indicator(self, is_recording):
+        # Implementation for visual feedback
+        pass
+        
+    def _show_processing_indicator(self, is_processing):
+        # Implementation for visual feedback
+        pass
+        
+    def _show_error_notification(self, message):
+        # Implementation for error notification
+        pass
+        
+    def _show_config_wizard(self):
+        # Implementation for configuration wizard
+        pass
+        
+    def shutdown(self):
+        # Clean up resources
+        if self.hotkey_manager:
+            self.hotkey_manager.unregister_all()
+            
+        if self.audio_capture:
+            self.audio_capture.close()
+```
+
+Implement a system tray application with status indicators. Add performance monitoring and usage statistics.
+
+# Test Strategy:
+1. Test the complete dictation workflow from hotkey press to text insertion
+2. Verify component coordination and state management
+3. Test error handling and recovery in various failure scenarios
+4. Measure end-to-end performance (time from hotkey to text insertion)
+5. Test resource management and cleanup
+6. Verify visual feedback mechanisms
+7. Test with various audio inputs and application contexts
