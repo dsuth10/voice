@@ -48,7 +48,7 @@ app_requirements = {
         }
     },
     "technical_architecture": {
-        "language": "Python 3.8+",
+        "language": "Python 3.12.8",
         "core_libraries": [
             "assemblyai",
             "openai", 
@@ -158,7 +158,7 @@ user_stories = [
 tech_spec = {
     "system_requirements": {
         "os": "Windows 10/11",
-        "python": "3.8+",
+        "python": "3.12.8",
         "ram": "4GB minimum, 8GB recommended",
         "storage": "100MB for application, additional for logs",
         "network": "Internet connection for API calls",

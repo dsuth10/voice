@@ -1,5 +1,3 @@
-<img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" class="logo" width="120"/>
-
 # Voice Dictation Assistant Development Plan: Comprehensive Product Requirements Document
 
 Based on extensive research into modern voice dictation technologies, including analysis of Wispr Flow's capabilities and current market solutions, I've created a comprehensive development plan for a Python-based voice dictation application for Windows that rivals commercial solutions.
@@ -12,6 +10,7 @@ The proposed application will provide **quick, efficient, and accurate voice tra
 
 ### 1. **Primary Technology Stack**
 
+- **Programming Language**: Python 3.12.8 (latest stable version with improved performance and features)
 - **Speech Recognition**: AssemblyAI API (best accuracy/latency balance for real-time applications)
 - **AI Enhancement**: OpenAI GPT-4o-mini (cost-effective with excellent grammar correction capabilities)
 - **Text Insertion**: pyautogui + pywin32 (Windows-optimized text manipulation)
