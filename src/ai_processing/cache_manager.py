@@ -1,19 +1,19 @@
 """
-Cache Manager for AI Text Enhancement
+Cache Management for AI Text Enhancement
 
-This module provides caching functionality and token usage tracking
-for the AI text enhancement system.
+This module provides caching functionality for AI text enhancement results
+to avoid redundant API calls and improve performance.
 """
 
 import json
-import time
 import hashlib
-from typing import Dict, Optional, Any, List
-from dataclasses import dataclass, asdict
+import time
+from typing import Dict, List, Optional, Any
+from dataclasses import dataclass
 from pathlib import Path
 import os
 
-from ..utils.logger import get_logger
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

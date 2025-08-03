@@ -51,8 +51,17 @@ class VoiceDictationLogger:
         # Console handler
         console_handler = logging.StreamHandler(sys.stdout)
         
-        # Define log format
-        log_format = logging.Formatter(
+        # Define log format with support for contextual information
+        class ContextFormatter(logging.Formatter):
+            def format(self, record):
+                # Add contextual information if available
+                if hasattr(record, 'error_context'):
+                    context_str = ' | '.join([f"{k}={v}" for k, v in record.error_context.items()])
+                    record.msg = f"{record.msg} | Context: {context_str}"
+                
+                return super().format(record)
+        
+        log_format = ContextFormatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S'
         )

@@ -159,11 +159,27 @@ class ConfigManager:
             # Get encrypted key from configuration
             encrypted_key = self.get(f'api_keys.{service}', '')
             
+            # Handle empty or None values
             if not encrypted_key:
+                self.logger.debug(f"No API key found for service: {service}")
                 return ""
             
-            # Decrypt the key
-            return self.secure_storage.decrypt_data(encrypted_key)
+            # Check if the data appears to be encrypted
+            if not self.secure_storage._is_encrypted_data(encrypted_key):
+                # If it's not encrypted, it might be stored in plain text
+                # (for backward compatibility or if encryption failed)
+                self.logger.warning(f"API key for {service} is not encrypted, returning as-is")
+                return encrypted_key
+            
+            # Attempt to decrypt the key
+            decrypted_key = self.secure_storage.decrypt_data(encrypted_key)
+            
+            # Validate the decrypted key
+            if decrypted_key and self.api_key_manager.validate_api_key(service, decrypted_key):
+                return decrypted_key
+            else:
+                self.logger.warning(f"Invalid or empty API key for service: {service}")
+                return ""
             
         except Exception as e:
             self.logger.error(f"Failed to get API key for {service}: {e}")
@@ -181,7 +197,13 @@ class ConfigManager:
             True if successful, False otherwise
         """
         try:
-            # Validate API key
+            # Handle empty API keys
+            if not api_key:
+                self.logger.warning(f"Empty API key provided for service: {service}")
+                # Remove the key from configuration
+                return self.set(f'api_keys.{service}', '')
+            
+            # Validate API key format
             if not self.api_key_manager.validate_api_key(service, api_key):
                 self.logger.error(f"Invalid API key format for {service}")
                 return False
@@ -413,4 +435,124 @@ class ConfigManager:
             
         except Exception as e:
             self.logger.error(f"Failed to restore configuration: {e}")
-            return False 
+            return False
+    
+    def diagnose_api_key_issues(self, service: str) -> dict:
+        """
+        Diagnose issues with API key configuration for a specific service.
+        
+        Args:
+            service: Service name to diagnose
+            
+        Returns:
+            Dictionary with diagnosis results
+        """
+        diagnosis = {
+            "service": service,
+            "has_stored_key": False,
+            "is_encrypted": False,
+            "is_valid": False,
+            "issues": [],
+            "recommendations": []
+        }
+        
+        try:
+            # Check if key exists in configuration
+            stored_key = self.get(f'api_keys.{service}', '')
+            
+            if not stored_key:
+                diagnosis["issues"].append("No API key configured")
+                diagnosis["recommendations"].append(f"Use set_api_key('{service}', 'your_key') to configure")
+                return diagnosis
+            
+            diagnosis["has_stored_key"] = True
+            
+            # Check if it's encrypted
+            if self.secure_storage._is_encrypted_data(stored_key):
+                diagnosis["is_encrypted"] = True
+                
+                # Try to decrypt
+                try:
+                    decrypted_key = self.secure_storage.decrypt_data(stored_key)
+                    if decrypted_key:
+                        diagnosis["is_valid"] = self.api_key_manager.validate_api_key(service, decrypted_key)
+                        if not diagnosis["is_valid"]:
+                            diagnosis["issues"].append("Decrypted key is invalid format")
+                            diagnosis["recommendations"].append("Reconfigure with a valid API key")
+                    else:
+                        diagnosis["issues"].append("Failed to decrypt key")
+                        diagnosis["recommendations"].append("Reconfigure the API key")
+                except Exception as e:
+                    diagnosis["issues"].append(f"Decryption failed: {e}")
+                    diagnosis["recommendations"].append("Reconfigure the API key")
+            else:
+                # Key is not encrypted (might be plain text)
+                diagnosis["issues"].append("API key is not encrypted")
+                diagnosis["recommendations"].append("Reconfigure the API key to enable encryption")
+                
+                # Check if it's a valid plain text key
+                if self.api_key_manager.validate_api_key(service, stored_key):
+                    diagnosis["is_valid"] = True
+                else:
+                    diagnosis["issues"].append("Plain text key is invalid format")
+                    diagnosis["recommendations"].append("Reconfigure with a valid API key")
+            
+        except Exception as e:
+            diagnosis["issues"].append(f"Diagnosis failed: {e}")
+            diagnosis["recommendations"].append("Check configuration file permissions")
+        
+        return diagnosis
+    
+    def fix_api_key_issues(self, service: str, new_api_key: str = None) -> bool:
+        """
+        Attempt to fix API key issues for a service.
+        
+        Args:
+            service: Service name to fix
+            new_api_key: New API key to set (if provided)
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Diagnose current issues
+            diagnosis = self.diagnose_api_key_issues(service)
+            
+            if diagnosis["is_valid"] and not new_api_key:
+                self.logger.info(f"API key for {service} is already valid")
+                return True
+            
+            # If new key provided, set it
+            if new_api_key:
+                return self.set_api_key(service, new_api_key)
+            
+            # Otherwise, clear the invalid key
+            self.logger.info(f"Clearing invalid API key for {service}")
+            return self.set(f'api_keys.{service}', '')
+            
+        except Exception as e:
+            self.logger.error(f"Failed to fix API key issues for {service}: {e}")
+            return False
+    
+    def list_api_key_status(self) -> dict:
+        """
+        List the status of all configured API keys.
+        
+        Returns:
+            Dictionary with service names and their status
+        """
+        status = {}
+        
+        # Common services to check
+        services = ["openai", "assemblyai", "google", "azure"]
+        
+        for service in services:
+            diagnosis = self.diagnose_api_key_issues(service)
+            status[service] = {
+                "configured": diagnosis["has_stored_key"],
+                "encrypted": diagnosis["is_encrypted"],
+                "valid": diagnosis["is_valid"],
+                "issues": diagnosis["issues"]
+            }
+        
+        return status 

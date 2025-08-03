@@ -12,7 +12,7 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 import re
 
-from ..utils.logger import get_logger
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

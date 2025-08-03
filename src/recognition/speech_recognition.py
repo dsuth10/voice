@@ -124,7 +124,8 @@ class SpeechRecognition:
                 logger.warning("AssemblyAI API key not provided")
             else:
                 try:
-                    self.assemblyai_client = aai.Client(assemblyai_api_key)
+                    settings = aai.Settings(api_key=assemblyai_api_key)
+                    self.assemblyai_client = aai.Client(settings=settings)
                     logger.info("AssemblyAI client initialized successfully")
                 except Exception as e:
                     logger.error(f"Failed to initialize AssemblyAI client: {e}")
@@ -369,6 +370,45 @@ class SpeechRecognition:
                     raise SpeechRecognitionError(f"All transcription services failed. Primary: {e}, Fallback: {fallback_error}")
             else:
                 raise SpeechRecognitionError(f"Primary service failed and fallback disabled: {e}")
+    
+    def transcribe(self, audio_data: bytes, custom_vocabulary: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
+        """
+        Synchronous transcription method that wraps the async transcribe_stream.
+        
+        Args:
+            audio_data: Audio data as bytes
+            custom_vocabulary: Optional list of custom vocabulary terms
+            
+        Returns:
+            Transcription result as dictionary or None if failed
+        """
+        try:
+            # Run the async method in a new event loop
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            try:
+                result = loop.run_until_complete(
+                    self.transcribe_stream(audio_data, custom_vocabulary)
+                )
+                
+                # Convert TranscriptionResult to dictionary format
+                return {
+                    'text': result.text,
+                    'confidence': result.confidence,
+                    'service': result.service.value,
+                    'start_time': result.start_time,
+                    'end_time': result.end_time,
+                    'language': result.language,
+                    'is_final': result.is_final
+                }
+                
+            finally:
+                loop.close()
+                
+        except Exception as e:
+            logger.error(f"Transcription failed: {e}")
+            return None
     
     def get_available_services(self) -> List[ServiceType]:
         """Get list of available services."""

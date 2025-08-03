@@ -5,7 +5,8 @@ Provides encryption and decryption of API keys and other sensitive information.
 
 import base64
 import logging
-from typing import Optional
+import re
+from typing import Optional, Tuple
 import win32crypt
 import win32api
 import win32security
@@ -19,6 +20,58 @@ class SecureStorage:
         """Initialize secure storage."""
         self.logger = logging.getLogger(__name__)
         self._description = "VoiceDictationAssistant"
+    
+    def _is_base64_encoded(self, data: str) -> bool:
+        """
+        Check if a string is valid base64 encoded.
+        
+        Args:
+            data: String to check
+            
+        Returns:
+            True if valid base64, False otherwise
+        """
+        if not data:
+            return False
+        
+        # Base64 pattern (alphanumeric + / + = for padding)
+        base64_pattern = re.compile(r'^[A-Za-z0-9+/]*={0,2}$')
+        
+        # Check if string matches base64 pattern
+        if not base64_pattern.match(data):
+            return False
+        
+        # Try to decode to verify it's valid base64
+        try:
+            base64.b64decode(data.encode('utf-8'))
+            return True
+        except Exception:
+            return False
+    
+    def _is_encrypted_data(self, data: str) -> bool:
+        """
+        Check if data appears to be encrypted (base64 encoded and not plain text).
+        
+        Args:
+            data: String to check
+            
+        Returns:
+            True if likely encrypted, False otherwise
+        """
+        if not data:
+            return False
+        
+        # Check if it's base64 encoded
+        if not self._is_base64_encoded(data):
+            return False
+        
+        # For now, assume any base64 data longer than 50 bytes might be encrypted
+        # This is a conservative approach to avoid false positives
+        try:
+            decoded = base64.b64decode(data.encode('utf-8'))
+            return len(decoded) > 50
+        except Exception:
+            return False
     
     def encrypt_data(self, data: str) -> str:
         """
@@ -40,10 +93,10 @@ class SecureStorage:
             # Convert string to bytes
             data_bytes = data.encode('utf-8')
             
-            # Encrypt using DPAPI
+            # Encrypt using DPAPI without description
             encrypted_data = win32crypt.CryptProtectData(
                 data_bytes,
-                self._description
+                None  # No description
             )
             
             # Encode as base64 for storage
@@ -69,12 +122,18 @@ class SecureStorage:
         if not encrypted_data:
             return ""
         
+        # Check if data appears to be encrypted
+        if not self._is_encrypted_data(encrypted_data):
+            self.logger.warning("Data does not appear to be encrypted, returning as-is")
+            return encrypted_data
+        
         try:
             # Decode from base64
             encrypted_bytes = base64.b64decode(encrypted_data.encode('utf-8'))
             
             # Decrypt using DPAPI
-            decrypted_data, _ = win32crypt.CryptUnprotectData(
+            # Note: pywin32 returns (description, data) instead of (data, description)
+            description, decrypted_data = win32crypt.CryptUnprotectData(
                 encrypted_bytes
             )
             
@@ -86,7 +145,8 @@ class SecureStorage:
             
         except Exception as e:
             self.logger.error(f"Failed to decrypt data: {e}")
-            raise Exception(f"Decryption failed: {e}")
+            # Return empty string instead of raising exception
+            return ""
     
     def test_encryption(self) -> bool:
         """

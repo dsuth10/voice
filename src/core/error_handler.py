@@ -213,6 +213,9 @@ class ErrorHandler:
         self.recovery_failure_count = 0
         
         self.logger.info("ErrorHandler initialized")
+        
+        # Set up global exception handling
+        self._setup_global_exception_handling()
     
     def handle_error(self, 
                     exception: Exception, 
@@ -237,10 +240,8 @@ class ErrorHandler:
             self.error_history.append(error_info)
             self.error_count += 1
             
-            # Log error
-            self.logger.error(f"Error occurred: {error_info.error_message}")
-            if error_info.stack_trace:
-                self.logger.debug(f"Stack trace: {error_info.stack_trace}")
+            # Log error with contextual information
+            self._log_error_with_context(error_info)
             
             # Attempt recovery
             recovery_success = self._attempt_recovery(error_info)
@@ -280,45 +281,83 @@ class ErrorHandler:
         
         return error_info
     
+    def _log_error_with_context(self, error_info: ErrorInfo):
+        """Log error with contextual information."""
+        # Create contextual information
+        context = {
+            'error_type': error_info.error_type.__name__,
+            'category': error_info.category.value,
+            'severity': error_info.severity.value,
+            'retry_count': error_info.retry_count,
+            'max_retries': error_info.max_retries
+        }
+        
+        if error_info.workflow_step:
+            context['workflow_step'] = error_info.workflow_step.value
+        
+        if error_info.application_state:
+            context['application_state'] = error_info.application_state.value
+        
+        # Log the error with context
+        self.logger.error(
+            f"Error occurred: {error_info.error_message}",
+            extra={'error_context': context}
+        )
+        
+        # Log stack trace at debug level
+        if error_info.stack_trace:
+            self.logger.debug(f"Stack trace: {error_info.stack_trace}")
+    
     def _classify_error(self, exception: Exception) -> ErrorCategory:
         """Classify the error based on exception type and message."""
         error_message = str(exception).lower()
+        exception_type = type(exception).__name__.lower()
+        
+        # Check for specific exception types first
+        if 'requests' in exception_type or 'urllib' in exception_type:
+            return ErrorCategory.NETWORK
+        
+        if 'permission' in exception_type or 'access' in exception_type:
+            return ErrorCategory.PERMISSION
+        
+        if 'memory' in exception_type or 'resource' in exception_type:
+            return ErrorCategory.RESOURCE
         
         # Audio errors
-        if any(keyword in error_message for keyword in ['audio', 'microphone', 'pyaudio', 'device']):
+        if any(keyword in error_message for keyword in ['audio', 'microphone', 'pyaudio', 'device', 'sound', 'recording']):
             return ErrorCategory.AUDIO
         
         # Transcription errors
-        if any(keyword in error_message for keyword in ['transcription', 'speech', 'assemblyai', 'whisper']):
+        if any(keyword in error_message for keyword in ['transcription', 'speech', 'assemblyai', 'whisper', 'recognize']):
             return ErrorCategory.TRANSCRIPTION
         
         # AI enhancement errors
-        if any(keyword in error_message for keyword in ['openai', 'gpt', 'enhancement', 'ai']):
+        if any(keyword in error_message for keyword in ['openai', 'gpt', 'enhancement', 'ai', 'completion', 'model']) and 'api key' not in error_message and 'allocation' not in error_message:
             return ErrorCategory.AI_ENHANCEMENT
         
         # Text insertion errors
-        if any(keyword in error_message for keyword in ['insertion', 'text', 'cursor', 'clipboard']):
+        if any(keyword in error_message for keyword in ['insertion', 'text', 'cursor', 'clipboard', 'typing', 'input']):
             return ErrorCategory.TEXT_INSERTION
         
-        # Hotkey errors
-        if any(keyword in error_message for keyword in ['hotkey', 'keyboard', 'shortcut']):
-            return ErrorCategory.HOTKEY
-        
-        # Configuration errors
-        if any(keyword in error_message for keyword in ['config', 'api_key', 'settings']):
+        # Configuration errors (check first to avoid conflicts)
+        if any(keyword in error_message for keyword in ['config', 'api_key', 'settings', 'configuration', 'setup']):
             return ErrorCategory.CONFIGURATION
         
+        # Resource errors (check before AI enhancement to avoid conflicts)
+        if any(keyword in error_message for keyword in ['memory', 'resource', 'disk', 'space', 'quota', 'allocation']):
+            return ErrorCategory.RESOURCE
+        
         # Network errors
-        if any(keyword in error_message for keyword in ['network', 'connection', 'timeout', 'http']):
+        if any(keyword in error_message for keyword in ['network', 'connection', 'timeout', 'http', 'ssl', 'dns']):
             return ErrorCategory.NETWORK
         
         # Permission errors
-        if any(keyword in error_message for keyword in ['permission', 'access', 'denied']):
+        if any(keyword in error_message for keyword in ['permission', 'access', 'denied', 'unauthorized', 'forbidden']):
             return ErrorCategory.PERMISSION
         
-        # Resource errors
-        if any(keyword in error_message for keyword in ['memory', 'resource', 'disk']):
-            return ErrorCategory.RESOURCE
+        # Hotkey errors (check after configuration to avoid conflicts)
+        if any(keyword in error_message for keyword in ['hotkey', 'keyboard', 'shortcut', 'binding']) or ('key' in error_message and 'api_key' not in error_message and 'authentication' not in error_message):
+            return ErrorCategory.HOTKEY
         
         return ErrorCategory.UNKNOWN
     
@@ -345,7 +384,7 @@ class ErrorHandler:
         return ErrorSeverity.MEDIUM
     
     def _attempt_recovery(self, error_info: ErrorInfo) -> bool:
-        """Attempt to recover from the error."""
+        """Attempt to recover from the error with exponential backoff."""
         if error_info.severity == ErrorSeverity.CRITICAL:
             self.logger.error("Critical error - no recovery attempted")
             return False
@@ -353,6 +392,18 @@ class ErrorHandler:
         if error_info.retry_count >= error_info.max_retries:
             self.logger.warning(f"Max retries reached for error: {error_info.error_message}")
             return False
+        
+        # Increment retry count
+        error_info.retry_count += 1
+        
+        # Calculate delay with exponential backoff (1s, 2s, 4s, etc.)
+        delay = 2 ** (error_info.retry_count - 1)
+        
+        self.logger.info(f"Attempting recovery (attempt {error_info.retry_count}/{error_info.max_retries}) with {delay}s delay")
+        
+        # Wait before retry
+        if error_info.retry_count > 1:
+            time.sleep(delay)
         
         # Find applicable recovery strategy
         for strategy in self.recovery_strategies:
@@ -441,6 +492,60 @@ class ErrorHandler:
             
         except Exception as e:
             self.logger.error(f"Error during error handler shutdown: {e}")
+    
+    def _setup_global_exception_handling(self):
+        """Set up global exception handling for uncaught exceptions."""
+        import sys
+        
+        def global_exception_handler(exc_type, exc_value, exc_traceback):
+            """Global exception handler for uncaught exceptions."""
+            if issubclass(exc_type, KeyboardInterrupt):
+                # Don't handle keyboard interrupts
+                sys.__excepthook__(exc_type, exc_value, exc_traceback)
+                return
+            
+            # Create error info for uncaught exception
+            error_info = ErrorInfo(
+                timestamp=datetime.now(),
+                error_type=exc_type,
+                error_message=str(exc_value),
+                severity=ErrorSeverity.HIGH,
+                category=ErrorCategory.UNKNOWN,
+                stack_trace=traceback.format_exception(exc_type, exc_value, exc_traceback)
+            )
+            
+            # Log the uncaught exception
+            self.logger.critical(
+                f"Uncaught exception: {exc_value}",
+                extra={'error_context': {
+                    'error_type': exc_type.__name__,
+                    'category': 'uncaught',
+                    'severity': 'critical'
+                }}
+            )
+            
+            # Attempt to handle the error
+            self.handle_error(exc_value)
+        
+        # Set the global exception handler
+        sys.excepthook = global_exception_handler
+        
+        # Set up threading exception handler (Python 3.8+)
+        if hasattr(threading, 'excepthook'):
+            def threading_exception_handler(args):
+                """Handle exceptions in threads."""
+                if args.exc_type is not None:
+                    self.logger.error(
+                        f"Uncaught exception in thread {args.thread}: {args.exc_value}",
+                        extra={'error_context': {
+                            'error_type': args.exc_type.__name__,
+                            'category': 'thread_exception',
+                            'thread': args.thread.name if args.thread else 'unknown'
+                        }}
+                    )
+                    self.handle_error(args.exc_value)
+            
+            threading.excepthook = threading_exception_handler
 
 
 class ErrorNotifier:
@@ -469,26 +574,119 @@ class ErrorNotifier:
     
     def _create_error_message(self, error_info: ErrorInfo) -> str:
         """Create user-friendly error message."""
+        error_message = error_info.error_message.lower()
+        
+        # Detailed category-specific messages
         category_messages = {
-            ErrorCategory.AUDIO: "Audio capture error",
-            ErrorCategory.TRANSCRIPTION: "Speech recognition error",
-            ErrorCategory.AI_ENHANCEMENT: "Text enhancement error",
-            ErrorCategory.TEXT_INSERTION: "Text insertion error",
-            ErrorCategory.HOTKEY: "Hotkey error",
-            ErrorCategory.CONFIGURATION: "Configuration error",
-            ErrorCategory.NETWORK: "Network connection error",
-            ErrorCategory.PERMISSION: "Permission error",
-            ErrorCategory.RESOURCE: "System resource error",
-            ErrorCategory.UNKNOWN: "Unknown error"
+            ErrorCategory.AUDIO: self._get_audio_error_message(error_message),
+            ErrorCategory.TRANSCRIPTION: self._get_transcription_error_message(error_message),
+            ErrorCategory.AI_ENHANCEMENT: self._get_ai_enhancement_error_message(error_message),
+            ErrorCategory.TEXT_INSERTION: self._get_text_insertion_error_message(error_message),
+            ErrorCategory.HOTKEY: self._get_hotkey_error_message(error_message),
+            ErrorCategory.CONFIGURATION: self._get_configuration_error_message(error_message),
+            ErrorCategory.NETWORK: self._get_network_error_message(error_message),
+            ErrorCategory.PERMISSION: self._get_permission_error_message(error_message),
+            ErrorCategory.RESOURCE: self._get_resource_error_message(error_message),
+            ErrorCategory.UNKNOWN: "An unexpected error occurred. Please try again."
         }
         
-        base_message = category_messages.get(error_info.category, "Unknown error")
+        base_message = category_messages.get(error_info.category, "An unexpected error occurred.")
         
+        # Add severity prefix
         if error_info.severity == ErrorSeverity.CRITICAL:
-            return f"Critical: {base_message}"
+            return f"Critical Error: {base_message}"
         elif error_info.severity == ErrorSeverity.HIGH:
             return f"Error: {base_message}"
         elif error_info.severity == ErrorSeverity.MEDIUM:
             return f"Warning: {base_message}"
         else:
-            return f"Notice: {base_message}" 
+            return f"Notice: {base_message}"
+    
+    def _get_audio_error_message(self, error_message: str) -> str:
+        """Get user-friendly audio error message."""
+        if 'no microphone' in error_message or 'device not found' in error_message:
+            return "No microphone detected. Please connect a microphone and try again."
+        elif 'permission' in error_message:
+            return "Microphone access denied. Please allow microphone permissions in your system settings."
+        elif 'busy' in error_message or 'in use' in error_message:
+            return "Microphone is currently in use by another application. Please close other audio applications and try again."
+        else:
+            return "Audio capture error. Please check your microphone settings and try again."
+    
+    def _get_transcription_error_message(self, error_message: str) -> str:
+        """Get user-friendly transcription error message."""
+        if 'api key' in error_message or 'authentication' in error_message:
+            return "Speech recognition service authentication failed. Please check your API key in settings."
+        elif 'rate limit' in error_message:
+            return "Speech recognition service is busy. Please wait a moment and try again."
+        elif 'network' in error_message or 'connection' in error_message:
+            return "Cannot connect to speech recognition service. Please check your internet connection."
+        else:
+            return "Speech recognition error. Please try speaking again."
+    
+    def _get_ai_enhancement_error_message(self, error_message: str) -> str:
+        """Get user-friendly AI enhancement error message."""
+        if 'api key' in error_message or 'authentication' in error_message:
+            return "AI enhancement service authentication failed. Please check your API key in settings."
+        elif 'rate limit' in error_message:
+            return "AI enhancement service is busy. Please wait a moment and try again."
+        elif 'network' in error_message or 'connection' in error_message:
+            return "Cannot connect to AI enhancement service. Please check your internet connection."
+        else:
+            return "Text enhancement error. Your text will be inserted without enhancement."
+    
+    def _get_text_insertion_error_message(self, error_message: str) -> str:
+        """Get user-friendly text insertion error message."""
+        if 'clipboard' in error_message:
+            return "Cannot access clipboard. Please check if another application is using the clipboard."
+        elif 'cursor' in error_message or 'position' in error_message:
+            return "Cannot determine cursor position. Please click in the text area where you want to insert text."
+        else:
+            return "Text insertion error. Please manually paste the text if needed."
+    
+    def _get_hotkey_error_message(self, error_message: str) -> str:
+        """Get user-friendly hotkey error message."""
+        if 'already registered' in error_message or 'conflict' in error_message:
+            return "Hotkey conflict detected. The key combination is already in use by another application."
+        elif 'permission' in error_message:
+            return "Cannot register hotkeys. Please run the application as administrator or check system permissions."
+        else:
+            return "Hotkey registration error. You can still use the system tray menu to control the application."
+    
+    def _get_configuration_error_message(self, error_message: str) -> str:
+        """Get user-friendly configuration error message."""
+        if 'api key' in error_message:
+            return "API key not configured. Please set up your API keys in the settings."
+        elif 'file' in error_message or 'path' in error_message:
+            return "Configuration file error. Please check if the settings file is accessible."
+        else:
+            return "Configuration error. Please check your settings and try again."
+    
+    def _get_network_error_message(self, error_message: str) -> str:
+        """Get user-friendly network error message."""
+        if 'timeout' in error_message:
+            return "Network timeout. Please check your internet connection and try again."
+        elif 'ssl' in error_message or 'certificate' in error_message:
+            return "Network security error. Please check your system's date and time settings."
+        elif 'dns' in error_message:
+            return "Cannot resolve server address. Please check your internet connection."
+        else:
+            return "Network connection error. Please check your internet connection and try again."
+    
+    def _get_permission_error_message(self, error_message: str) -> str:
+        """Get user-friendly permission error message."""
+        if 'access denied' in error_message:
+            return "Access denied. Please run the application as administrator or check file permissions."
+        elif 'unauthorized' in error_message:
+            return "Unauthorized access. Please check your account permissions."
+        else:
+            return "Permission error. Please check your system permissions and try again."
+    
+    def _get_resource_error_message(self, error_message: str) -> str:
+        """Get user-friendly resource error message."""
+        if 'memory' in error_message:
+            return "Insufficient memory. Please close other applications and try again."
+        elif 'disk' in error_message or 'space' in error_message:
+            return "Insufficient disk space. Please free up some space and try again."
+        else:
+            return "System resource error. Please restart the application and try again." 

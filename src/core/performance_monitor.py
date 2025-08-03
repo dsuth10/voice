@@ -10,6 +10,7 @@ import time
 import psutil
 import json
 import hashlib
+import os
 from typing import Optional, Dict, Any, List, Callable
 from dataclasses import dataclass, asdict
 from enum import Enum
@@ -87,6 +88,24 @@ class UsageStatistics:
     text_insertions: int = 0
 
 
+@dataclass
+class AnalyticsData:
+    """Analytics data structure for export."""
+    session_id: str
+    session_duration_hours: float
+    total_workflows: int
+    success_rate: float
+    average_workflow_duration: float
+    total_recording_time_hours: float
+    total_processing_time_hours: float
+    error_rate: float
+    recovery_success_rate: float
+    hotkey_presses: int
+    text_insertions: int
+    system_performance: Dict[str, float]
+    export_timestamp: str
+
+
 class PerformanceMonitor:
     """
     Performance monitoring system for tracking application performance.
@@ -95,18 +114,37 @@ class PerformanceMonitor:
     workflow timing, system resource usage, and usage statistics.
     """
     
-    def __init__(self, monitoring_interval: float = 1.0):
+    def __init__(self, config_manager=None, monitoring_interval: float = 1.0):
         """
         Initialize the performance monitor.
         
         Args:
+            config_manager: Configuration manager for analytics settings
             monitoring_interval: Interval in seconds for resource monitoring
         """
         self.logger = logging.getLogger(__name__)
+        self.config_manager = config_manager
         
         # Configuration
         self.monitoring_interval = monitoring_interval
         self.enabled = True
+        
+        # Analytics settings
+        self.analytics_enabled = False
+        self.performance_monitoring = True
+        self.usage_statistics = True
+        self.error_tracking = True
+        self.session_tracking = True
+        self.anonymized_export = False
+        self.data_retention_days = 30
+        self.upload_interval_hours = 24
+        self.include_system_resources = True
+        self.include_workflow_timing = True
+        self.privacy_mode = True
+        
+        # Load analytics settings from config
+        if config_manager:
+            self._load_analytics_settings()
         
         # Data storage
         self.metrics: List[PerformanceMetric] = []
@@ -127,7 +165,37 @@ class PerformanceMonitor:
         # Current workflow tracking
         self.current_workflow: Optional[WorkflowPerformance] = None
         
+        # Analytics storage
+        self.analytics_dir = self._get_analytics_directory()
+        
         self.logger.info("PerformanceMonitor initialized")
+    
+    def _load_analytics_settings(self):
+        """Load analytics settings from configuration."""
+        try:
+            self.analytics_enabled = self.config_manager.get('analytics.enabled', False)
+            self.performance_monitoring = self.config_manager.get('analytics.performance_monitoring', True)
+            self.usage_statistics = self.config_manager.get('analytics.usage_statistics', True)
+            self.error_tracking = self.config_manager.get('analytics.error_tracking', True)
+            self.session_tracking = self.config_manager.get('analytics.session_tracking', True)
+            self.anonymized_export = self.config_manager.get('analytics.anonymized_export', False)
+            self.data_retention_days = self.config_manager.get('analytics.data_retention_days', 30)
+            self.upload_interval_hours = self.config_manager.get('analytics.upload_interval_hours', 24)
+            self.include_system_resources = self.config_manager.get('analytics.include_system_resources', True)
+            self.include_workflow_timing = self.config_manager.get('analytics.include_workflow_timing', True)
+            self.privacy_mode = self.config_manager.get('analytics.privacy_mode', True)
+            
+            self.logger.info(f"Analytics settings loaded: enabled={self.analytics_enabled}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to load analytics settings: {e}")
+    
+    def _get_analytics_directory(self) -> str:
+        """Get the analytics data directory."""
+        app_data_dir = os.environ.get('APPDATA', os.path.expanduser('~'))
+        analytics_dir = os.path.join(app_data_dir, 'VoiceDictationAssistant', 'analytics')
+        os.makedirs(analytics_dir, exist_ok=True)
+        return analytics_dir
     
     def start_monitoring(self):
         """Start the performance monitoring thread."""
@@ -151,6 +219,11 @@ class PerformanceMonitor:
         """Monitor system resources in background thread."""
         while not self.stop_monitoring.is_set():
             try:
+                # Only monitor if enabled and system resources are included
+                if not self.performance_monitoring or not self.include_system_resources:
+                    time.sleep(self.monitoring_interval)
+                    continue
+                
                 # Get system resources
                 cpu_percent = psutil.cpu_percent(interval=0.1)
                 memory = psutil.virtual_memory()
@@ -183,9 +256,8 @@ class PerformanceMonitor:
                     except Exception as e:
                         self.logger.error(f"Resource callback error: {e}")
                 
-                # Clean up old data (keep last 1000 entries)
-                if len(self.system_resources) > 1000:
-                    self.system_resources = self.system_resources[-1000:]
+                # Clean up old data based on retention settings
+                self._cleanup_old_data()
                 
                 time.sleep(self.monitoring_interval)
                 
@@ -193,10 +265,32 @@ class PerformanceMonitor:
                 self.logger.error(f"Error in resource monitoring: {e}")
                 time.sleep(self.monitoring_interval)
     
+    def _cleanup_old_data(self):
+        """Clean up old data based on retention settings."""
+        if not self.analytics_enabled:
+            return
+        
+        cutoff_time = datetime.now() - timedelta(days=self.data_retention_days)
+        
+        with self.data_lock:
+            # Clean up metrics
+            self.metrics = [m for m in self.metrics if m.timestamp > cutoff_time]
+            
+            # Clean up workflow performance
+            self.workflow_performance = [w for w in self.workflow_performance 
+                                       if w.end_time and w.end_time > cutoff_time]
+            
+            # Clean up system resources (keep last 1000 entries regardless)
+            if len(self.system_resources) > 1000:
+                self.system_resources = self.system_resources[-1000:]
+    
     def record_metric(self, name: str, value: float, unit: str, 
                      metric_type: MetricType = MetricType.TIMING,
                      context: Optional[Dict[str, Any]] = None):
         """Record a performance metric."""
+        if not self.performance_monitoring:
+            return
+        
         metric = PerformanceMetric(
             timestamp=datetime.now(),
             metric_type=metric_type,
@@ -220,6 +314,9 @@ class PerformanceMonitor:
     
     def start_workflow_tracking(self, workflow_id: str):
         """Start tracking a new workflow."""
+        if not self.include_workflow_timing:
+            return
+        
         self.current_workflow = WorkflowPerformance(
             workflow_id=workflow_id,
             start_time=datetime.now()
@@ -229,14 +326,15 @@ class PerformanceMonitor:
     
     def record_workflow_step(self, step: WorkflowStep, duration: float):
         """Record the duration of a workflow step."""
-        if self.current_workflow:
-            self.current_workflow.step_durations[step] = duration
-            self.logger.debug(f"Workflow step {step.value}: {duration:.3f}s")
+        if not self.include_workflow_timing or not self.current_workflow:
+            return
+        
+        self.current_workflow.step_durations[step] = duration
+        self.logger.debug(f"Workflow step {step.value}: {duration:.3f}s")
     
     def end_workflow_tracking(self, success: bool, error_message: Optional[str] = None):
         """End tracking the current workflow."""
-        if not self.current_workflow:
-            self.logger.warning("No workflow to end tracking")
+        if not self.include_workflow_timing or not self.current_workflow:
             return
         
         self.current_workflow.end_time = datetime.now()
@@ -251,7 +349,8 @@ class PerformanceMonitor:
             self.workflow_performance.append(self.current_workflow)
         
         # Update usage statistics
-        self._update_usage_stats(self.current_workflow)
+        if self.usage_statistics:
+            self._update_usage_stats(self.current_workflow)
         
         self.logger.info(f"Ended workflow tracking: {self.current_workflow.workflow_id} "
                         f"({self.current_workflow.total_duration:.3f}s, success={success})")
@@ -266,7 +365,8 @@ class PerformanceMonitor:
             self.usage_stats.successful_workflows += 1
         else:
             self.usage_stats.failed_workflows += 1
-            self.usage_stats.error_count += 1
+            if self.error_tracking:
+                self.usage_stats.error_count += 1
         
         if workflow.total_duration:
             self.usage_stats.average_workflow_duration = (
@@ -286,21 +386,33 @@ class PerformanceMonitor:
     
     def record_hotkey_press(self):
         """Record a hotkey press event."""
+        if not self.usage_statistics:
+            return
+        
         self.usage_stats.hotkey_presses += 1
         self.record_metric("hotkey_press", 1, "count", MetricType.USAGE)
     
     def record_text_insertion(self):
         """Record a text insertion event."""
+        if not self.usage_statistics:
+            return
+        
         self.usage_stats.text_insertions += 1
         self.record_metric("text_insertion", 1, "count", MetricType.USAGE)
     
     def record_error(self):
         """Record an error event."""
+        if not self.error_tracking:
+            return
+        
         self.usage_stats.error_count += 1
         self.record_metric("error", 1, "count", MetricType.ERROR)
     
     def record_recovery_success(self):
         """Record a successful recovery event."""
+        if not self.error_tracking:
+            return
+        
         self.usage_stats.recovery_success_count += 1
         self.record_metric("recovery_success", 1, "count", MetricType.USAGE)
     
@@ -308,7 +420,7 @@ class PerformanceMonitor:
         """Get a summary of performance data."""
         with self.data_lock:
             recent_workflows = [w for w in self.workflow_performance 
-                              if (datetime.now() - w.end_time).seconds < 3600] if w.end_time else False
+                              if w.end_time and (datetime.now() - w.end_time).seconds < 3600]
             
             if recent_workflows:
                 avg_duration = sum(w.total_duration for w in recent_workflows) / len(recent_workflows)
@@ -367,30 +479,52 @@ class PerformanceMonitor:
         """Add callback for usage statistics notifications."""
         self.usage_callbacks.append(callback)
     
-    def export_anonymized_data(self) -> Dict[str, Any]:
+    def export_anonymized_data(self) -> AnalyticsData:
         """Export anonymized usage data for analysis."""
+        if not self.anonymized_export:
+            raise ValueError("Anonymized export is not enabled")
+        
         # Create anonymized session ID
         session_hash = hashlib.sha256(
             self.usage_stats.session_start.isoformat().encode()
         ).hexdigest()[:8]
         
-        return {
-            'session_id': session_hash,
-            'session_duration_hours': (datetime.now() - self.usage_stats.session_start).total_seconds() / 3600,
-            'total_workflows': self.usage_stats.total_workflows,
-            'success_rate': (self.usage_stats.successful_workflows / max(self.usage_stats.total_workflows, 1)) * 100,
-            'average_workflow_duration': self.usage_stats.average_workflow_duration,
-            'total_recording_time_hours': self.usage_stats.total_recording_time / 3600,
-            'total_processing_time_hours': self.usage_stats.total_processing_time / 3600,
-            'error_rate': (self.usage_stats.error_count / max(self.usage_stats.total_workflows, 1)) * 100,
-            'recovery_success_rate': (self.usage_stats.recovery_success_count / max(self.usage_stats.error_count, 1)) * 100,
-            'hotkey_presses': self.usage_stats.hotkey_presses,
-            'text_insertions': self.usage_stats.text_insertions,
-            'export_timestamp': datetime.now().isoformat()
+        # Calculate system performance averages
+        recent_resources = self.system_resources[-100:] if self.system_resources else []
+        system_performance = {
+            'avg_cpu_percent': sum(r.cpu_percent for r in recent_resources) / len(recent_resources) if recent_resources else 0.0,
+            'avg_memory_percent': sum(r.memory_percent for r in recent_resources) / len(recent_resources) if recent_resources else 0.0,
+            'avg_memory_used_mb': sum(r.memory_used_mb for r in recent_resources) / len(recent_resources) if recent_resources else 0.0,
+            'avg_disk_usage_percent': sum(r.disk_usage_percent for r in recent_resources) / len(recent_resources) if recent_resources else 0.0
         }
+        
+        return AnalyticsData(
+            session_id=session_hash,
+            session_duration_hours=(datetime.now() - self.usage_stats.session_start).total_seconds() / 3600,
+            total_workflows=self.usage_stats.total_workflows,
+            success_rate=(self.usage_stats.successful_workflows / max(self.usage_stats.total_workflows, 1)) * 100,
+            average_workflow_duration=self.usage_stats.average_workflow_duration,
+            total_recording_time_hours=self.usage_stats.total_recording_time / 3600,
+            total_processing_time_hours=self.usage_stats.total_processing_time / 3600,
+            error_rate=(self.usage_stats.error_count / max(self.usage_stats.total_workflows, 1)) * 100,
+            recovery_success_rate=(self.usage_stats.recovery_success_count / max(self.usage_stats.error_count, 1)) * 100,
+            hotkey_presses=self.usage_stats.hotkey_presses,
+            text_insertions=self.usage_stats.text_insertions,
+            system_performance=system_performance,
+            export_timestamp=datetime.now().isoformat()
+        )
     
-    def save_performance_data(self, filepath: str):
-        """Save performance data to file."""
+    def save_analytics_data(self, filename: Optional[str] = None) -> str:
+        """Save analytics data to file."""
+        if not self.analytics_enabled:
+            raise ValueError("Analytics is not enabled")
+        
+        if filename is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"analytics_{timestamp}.json"
+        
+        filepath = os.path.join(self.analytics_dir, filename)
+        
         try:
             data = {
                 'metrics': [asdict(m) for m in self.metrics],
@@ -403,10 +537,36 @@ class PerformanceMonitor:
             with open(filepath, 'w') as f:
                 json.dump(data, f, indent=2, default=str)
             
-            self.logger.info(f"Performance data saved to {filepath}")
+            self.logger.info(f"Analytics data saved to {filepath}")
+            return filepath
             
         except Exception as e:
-            self.logger.error(f"Failed to save performance data: {e}")
+            self.logger.error(f"Failed to save analytics data: {e}")
+            raise
+    
+    def save_anonymized_report(self, filename: Optional[str] = None) -> str:
+        """Save anonymized analytics report."""
+        if not self.anonymized_export:
+            raise ValueError("Anonymized export is not enabled")
+        
+        if filename is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"anonymized_report_{timestamp}.json"
+        
+        filepath = os.path.join(self.analytics_dir, filename)
+        
+        try:
+            data = self.export_anonymized_data()
+            
+            with open(filepath, 'w') as f:
+                json.dump(asdict(data), f, indent=2)
+            
+            self.logger.info(f"Anonymized report saved to {filepath}")
+            return filepath
+            
+        except Exception as e:
+            self.logger.error(f"Failed to save anonymized report: {e}")
+            raise
     
     def clear_data(self):
         """Clear all performance data."""
@@ -428,6 +588,13 @@ class PerformanceMonitor:
             
             # End current session
             self.usage_stats.session_end = datetime.now()
+            
+            # Save final analytics data if enabled
+            if self.analytics_enabled:
+                try:
+                    self.save_analytics_data("final_session_data.json")
+                except Exception as e:
+                    self.logger.error(f"Failed to save final analytics data: {e}")
             
             # Clear callbacks
             self.metric_callbacks.clear()
@@ -473,6 +640,13 @@ System Performance:
 Error Handling:
 - Total Errors: {summary['error_count']}
 - Recovery Successes: {summary['recovery_success_count']}
+
+Analytics Settings:
+- Analytics Enabled: {self.monitor.analytics_enabled}
+- Performance Monitoring: {self.monitor.performance_monitoring}
+- Usage Statistics: {self.monitor.usage_statistics}
+- Error Tracking: {self.monitor.error_tracking}
+- Privacy Mode: {self.monitor.privacy_mode}
 """
         
         return report
@@ -483,7 +657,7 @@ Error Handling:
             data = self.monitor.export_anonymized_data()
             
             with open(filepath, 'w') as f:
-                json.dump(data, f, indent=2)
+                json.dump(asdict(data), f, indent=2)
             
             self.logger.info(f"Anonymized report exported to {filepath}")
             

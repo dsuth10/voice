@@ -4,7 +4,7 @@ Defines the structure and validation rules for all configuration options.
 """
 
 from typing import Dict, Optional, List
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 import os
 
 
@@ -41,7 +41,8 @@ class APIKeysConfig(BaseModel):
     assemblyai: str = Field(default="", description="AssemblyAI API key")
     openai: str = Field(default="", description="OpenAI API key")
     
-    @validator('assemblyai', 'openai')
+    @field_validator('assemblyai', 'openai')
+    @classmethod
     def validate_api_key_format(cls, v):
         """Validate API key format (basic check for non-empty and reasonable length)."""
         if v and len(v) < 10:
@@ -66,6 +67,21 @@ class LoggingConfig(BaseModel):
     max_log_size: int = Field(default=10, ge=1, le=100, description="Maximum log file size in MB")
 
 
+class AnalyticsConfig(BaseModel):
+    """Analytics and performance monitoring settings."""
+    enabled: bool = Field(default=False, description="Enable analytics collection")
+    performance_monitoring: bool = Field(default=True, description="Enable performance monitoring")
+    usage_statistics: bool = Field(default=True, description="Collect usage statistics")
+    error_tracking: bool = Field(default=True, description="Track error rates and types")
+    session_tracking: bool = Field(default=True, description="Track session duration and activity")
+    anonymized_export: bool = Field(default=False, description="Allow export of anonymized data")
+    data_retention_days: int = Field(default=30, ge=1, le=365, description="Days to retain analytics data")
+    upload_interval_hours: int = Field(default=24, ge=1, le=168, description="Hours between data uploads")
+    include_system_resources: bool = Field(default=True, description="Include system resource usage in analytics")
+    include_workflow_timing: bool = Field(default=True, description="Include detailed workflow timing data")
+    privacy_mode: bool = Field(default=True, description="Enable privacy mode (no personal data collection)")
+
+
 class ProfileConfig(BaseModel):
     """Configuration profile settings."""
     name: str = Field(description="Profile name")
@@ -83,18 +99,20 @@ class MainConfig(BaseModel):
     api_keys: APIKeysConfig = Field(default_factory=APIKeysConfig, description="API keys")
     ui: UIConfig = Field(default_factory=UIConfig, description="User interface settings")
     logging: LoggingConfig = Field(default_factory=LoggingConfig, description="Logging settings")
+    analytics: AnalyticsConfig = Field(default_factory=AnalyticsConfig, description="Analytics settings")
     current_profile: str = Field(default="default", description="Current active profile")
     profiles: Dict[str, ProfileConfig] = Field(default_factory=dict, description="Available profiles")
     
-    class Config:
-        """Pydantic configuration."""
-        validate_assignment = True
-        extra = "forbid"  # Prevent additional fields
+    model_config = {
+        "validate_assignment": True,
+        "extra": "forbid"  # Prevent additional fields
+    }
     
-    @validator('current_profile')
-    def validate_current_profile(cls, v, values):
+    @field_validator('current_profile')
+    @classmethod
+    def validate_current_profile(cls, v, info):
         """Ensure current profile exists in profiles list."""
-        profiles = values.get('profiles', {})
+        profiles = info.data.get('profiles', {}) if info.data else {}
         if v not in profiles and profiles:
             raise ValueError(f"Current profile '{v}' not found in available profiles")
         return v
@@ -150,9 +168,9 @@ def validate_config_file(config_data: dict) -> MainConfig:
     try:
         return MainConfig(**config_data)
     except Exception as e:
-        raise ValueError(f"Invalid configuration data: {e}")
+        raise ValueError(f"Invalid configuration: {e}")
 
 
 def get_config_schema() -> dict:
-    """Get the JSON schema for the configuration."""
-    return MainConfig.schema() 
+    """Get the configuration schema for documentation."""
+    return MainConfig.model_json_schema() 

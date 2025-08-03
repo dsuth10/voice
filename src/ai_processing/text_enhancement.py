@@ -15,10 +15,7 @@ from datetime import datetime
 import openai
 from openai import OpenAI
 
-try:
-    from ..utils.logger import get_logger
-except ImportError:
-    from utils.logger import get_logger
+from utils.logger import get_logger
 from .prompt_templates import PromptTemplateManager
 from .cache_manager import CacheManager
 

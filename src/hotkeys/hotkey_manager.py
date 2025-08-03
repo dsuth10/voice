@@ -104,7 +104,14 @@ class HotkeyManager:
                 return False
             
             # Register with global-hotkeys library
-            key_id = global_hotkeys.register_hotkey(normalized_key)
+            # For push-to-talk mode, use the same callback for press and release
+            # For toggle mode, use the same callback for both
+            key_id = global_hotkeys.register_hotkey(
+                normalized_key,
+                hotkey_config.callback,  # press_callback
+                hotkey_config.callback,  # release_callback
+                actuate_on_partial_release=False
+            )
             
             # Store the registration
             self.hotkeys[normalized_key] = key_id
@@ -192,7 +199,8 @@ class HotkeyManager:
         
         try:
             self.listening = True
-            global_hotkeys.start_checking_hotkeys(self._hotkey_callback)
+            # Start the hotkey listener without parameters
+            global_hotkeys.start_checking_hotkeys()
             self.logger.info("Started hotkey listener")
             
         except Exception as e:
@@ -211,6 +219,21 @@ class HotkeyManager:
             
         except Exception as e:
             self.logger.error(f"Failed to stop hotkey listener: {e}")
+    
+    def unregister_all(self):
+        """Unregister all hotkeys and stop listening."""
+        try:
+            # Stop listening first
+            self.stop_listening()
+            
+            # Unregister all hotkeys
+            for key_combination in list(self.hotkeys.keys()):
+                self.unregister_hotkey(key_combination)
+            
+            self.logger.info("All hotkeys unregistered")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to unregister all hotkeys: {e}")
     
     def _hotkey_callback(self, key_id: int):
         """
@@ -242,20 +265,19 @@ class HotkeyManager:
         # Convert to lowercase and remove extra spaces
         normalized = key_combination.lower().strip()
         
-        # Replace common variations
-        replacements = {
-            'ctrl': 'ctrl',
-            'control': 'ctrl',
-            'alt': 'alt',
-            'shift': 'shift',
-            'win': 'win',
-            'windows': 'win',
-            'space': 'space',
-            'spacebar': 'space'
-        }
+        # Replace common variations with global-hotkeys compatible names
+        # Use word boundaries to avoid partial replacements
+        import re
         
-        for old, new in replacements.items():
-            normalized = normalized.replace(old, new)
+        # Replace with word boundaries to avoid partial matches
+        normalized = re.sub(r'\bwin\b', 'window', normalized)
+        normalized = re.sub(r'\bwindows\b', 'window', normalized)
+        normalized = re.sub(r'\bctrl\b', 'control', normalized)
+        normalized = re.sub(r'\bcontrol\b', 'control', normalized)
+        normalized = re.sub(r'\balt\b', 'alt', normalized)
+        normalized = re.sub(r'\bshift\b', 'shift', normalized)
+        normalized = re.sub(r'\bspace\b', 'space', normalized)
+        normalized = re.sub(r'\bspacebar\b', 'space', normalized)
         
         return normalized
     
@@ -282,14 +304,13 @@ class HotkeyManager:
         return normalized_key in self.hotkeys
     
     def cleanup(self):
-        """Clean up all registered hotkeys and stop listening."""
-        self.stop_listening()
-        
-        # Unregister all hotkeys
-        for hotkey in list(self.hotkeys.keys()):
-            self.unregister_hotkey(hotkey)
-        
-        self.logger.info("HotkeyManager cleanup completed")
+        """Clean up all hotkey registrations and stop listening."""
+        try:
+            self.unregister_all()
+            self.logger.info("HotkeyManager cleanup completed")
+            
+        except Exception as e:
+            self.logger.error(f"Error during HotkeyManager cleanup: {e}")
     
     def __enter__(self):
         """Context manager entry."""
