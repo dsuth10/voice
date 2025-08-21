@@ -7,8 +7,19 @@ text formatting and behavior based on the application context.
 
 import logging
 from typing import Optional, Dict, Any, List
-import pygetwindow as gw
 from dataclasses import dataclass
+
+# ``pygetwindow`` is an optional dependency that is not available on all
+# platforms (for example the execution environment used for these tests).
+# Importing it unconditionally would raise a ``ModuleNotFoundError`` and make
+# the whole context module unusable.  The tests only need the ability to import
+# the module and, in some cases, gracefully handle the absence of window
+# information.  To keep the public API the same we attempt to import
+# ``pygetwindow`` but fall back to ``None`` when it isn't installed.
+try:  # pragma: no cover - behaviour exercised indirectly in tests
+    import pygetwindow as gw  # type: ignore
+except Exception:  # pragma: no cover - triggered when dependency is missing
+    gw = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -125,16 +136,24 @@ class ApplicationContext:
     def detect_active_window(self) -> Optional[WindowInfo]:
         """
         Detect the currently active window using pygetwindow.
-        
+
         Returns:
             WindowInfo object with window details, or None if detection fails
         """
+        # ``pygetwindow`` may not be available (e.g. on headless CI systems).
+        # In that case we simply return ``None`` which callers already handle by
+        # falling back to a generic context.  This mirrors the behaviour when
+        # the library is present but no active window can be determined.
+        if gw is None:  # pragma: no cover - depends on platform
+            logger.warning("pygetwindow is not available; cannot detect window")
+            return None
+
         try:
             active_window = gw.getActiveWindow()
             if not active_window:
                 logger.warning("No active window detected")
                 return None
-            
+
             # Get window properties
             window_info = WindowInfo(
                 title=active_window.title,
@@ -143,11 +162,11 @@ class ApplicationContext:
                 is_minimized=active_window.isMinimized,
                 is_maximized=active_window.isMaximized
             )
-            
+
             logger.debug(f"Detected active window: {window_info.title}")
             return window_info
-            
-        except Exception as e:
+
+        except Exception as e:  # pragma: no cover - defensive programming
             logger.error(f"Error detecting active window: {e}")
             return None
     

@@ -7,11 +7,18 @@ other applications, and offering fallback solutions.
 """
 
 import logging
-import winreg
 import subprocess
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
+
+# ``winreg`` is only available on Windows.  The conflict detector mainly uses
+# predefined dictionaries and does not rely on the module directly, so we import
+# it defensively to keep the module importable on other platforms.
+try:  # pragma: no cover - depends on platform
+    import winreg  # type: ignore
+except Exception:  # pragma: no cover
+    winreg = None  # type: ignore
 
 
 class ConflictLevel(Enum):
